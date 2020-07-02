@@ -1,0 +1,3 @@
+[submodule "src/device-detection-cxx"]
+	path = src/device-detection-cxx
+	url = ../device-detection-cxx
