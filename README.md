@@ -131,7 +131,7 @@ $ cd device-detection-varnish
 
 ```
 
-and install the module with (**NOTE**: if Varnish was installed using the package manager, its' files will be located under `/usr` directory rather than `/usr/local`. The `VARNISHSRC` in the `configure.ac` will need to be updated as below in order for the installation to succeed).
+and install the module with (**NOTE**: if Varnish source was installed using the package manager, its' files will be located under `/usr/include/varnish` directory rather than `/usr/local/include/varnish`. The environment variable `VARNISHSRC` will need to be set to point to this location for the installation to succeed).
 
 ```
 
@@ -149,7 +149,7 @@ $ sudo make install
 
 Where `--with-config`  [optional] sets the version that will be built. `release` and `test` versions are identical, except that the `test` version expose some additional functions to support the testing process. Only `release` version is recommended for production. By default `release` version is built.
 
-When varnish is installed in a non standard directory, please update the value of `VARNISHSRC` in the `configure.ac`, located in the root directory of your cloned project.
+When varnish is installed in a non standard directory, please set the value of environment variable `VARNISHSRC` to point to where the varnish source resides (e.g. ``export VARNISHSRC=/usr/include/varnish``).
 
   
 

@@ -89,7 +89,9 @@ if test "x$varnishversion" = x; then
 	AC_PATH_PROG([VARNISHD], [varnishd], [],
     	[$LIBVARNISHAPI_SBINDIR:$LIBVARNISHAPI_BINDIR:$PATH])
 	varnishversion=`$VARNISHD -V 2>&1 | tr ' ' '\n' | $EGREP -o '@<:@0-9@:>@+\.@<:@0-9@:>@+\.@<:@0-9@:>@+'`
-	VARNISHSRC=/usr/local/include/varnish
+	if test  ! -d "${VARNISHSRC}"; then
+		VARNISHSRC=/usr/local/include/varnish
+	fi
 else
 	# Check for wget
 	AC_CHECK_PROGS(WGET,
