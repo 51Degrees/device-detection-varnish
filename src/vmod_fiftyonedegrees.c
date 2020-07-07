@@ -110,6 +110,7 @@ static unsigned getString(const int32_t offset, char *buffer, unsigned bufferSiz
 
 	// Reset the data structure in the item
 	DataReset(&item.data);
+	// Fetch a safe reference to the dataset
 	dataset = DataSetHashGet(global.manager);
 	
 	// Obtain the string item
@@ -120,6 +121,8 @@ static unsigned getString(const int32_t offset, char *buffer, unsigned bufferSiz
 		&item,
 		exception);
 	if (EXCEPTION_FAILED) {
+		// Release the safe reference
+		DataSetHashRelease(dataset);
 		return 0;
 	}
 
@@ -127,6 +130,8 @@ static unsigned getString(const int32_t offset, char *buffer, unsigned bufferSiz
 	n = snprintf(buffer, bufferSize, "%s", STRING(itemData));
 	// Release the string item
 	COLLECTION_RELEASE(dataset->strings, &item);
+	// Release the safe reference to the dataset
+	DataSetHashRelease(dataset);
 
 	// Return the number of written characters including the null terminator
 	return (++n);
@@ -146,17 +151,26 @@ VCL_STRING vmod_get_dataset_name(const struct vrt_ctx *ctx)
 	// printed respectively
 	unsigned u, v;
 
+	DataSetHash *dataset;
+
 	// Reserved some workspace
 	u = WS_Reserve(ctx->ws, 0);
 	// Get pointer to the front of the work space
 	p = ctx->ws->f;
 
-	v = getString(DataSetHashGet(global.manager)->header.nameOffset, p, u);
+	// Get a safe reference to the dataset
+	dataset = DataSetHashGet(global.manager);
+
+	v = getString(dataset->header.nameOffset, p, u);
 	if (v == 0 || v > u) {
+		// Release the safe reference
+		DataSetHashRelease(dataset);
 		// No space, reset and leave
 		WS_Release(ctx->ws, 0);
 		return(NULL);
 	}
+	// Release the safe reference
+	DataSetHashRelease(dataset);
 	// Update work space with what has been used.
 	WS_Release(ctx->ws, v);
 	return (p);
@@ -176,17 +190,26 @@ VCL_STRING vmod_get_dataset_format(const struct vrt_ctx *ctx)
 	// printed respectively
 	unsigned u, v;
 
+	DataSetHash *dataset;
+
 	// Reserved some workspace
 	u = WS_Reserve(ctx->ws, 0);
 	// Get pointer to the front of the work space
 	p = ctx->ws->f;
 
-	v = getString(DataSetHashGet(global.manager)->header.formatOffset, p, u);
+	// Get a safe reference to the dataset
+	dataset = DataSetHashGet(global.manager);
+
+	v = getString(dataset->header.formatOffset, p, u);
 	if (v == 0 || v > u) {
+		// Release the safe reference
+		DataSetHashRelease(dataset);
 		// No space, reset and leave
 		WS_Release(ctx->ws, 0);
 		return(NULL);
 	}
+	// Release the safe reference
+	DataSetHashRelease(dataset);
 	// Update work space with what has been used.
 	WS_Release(ctx->ws, v);
 	return (p);
@@ -203,19 +226,24 @@ VCL_STRING vmod_get_dataset_published_date(const struct vrt_ctx *ctx)
 	char *p;
 	unsigned u, v;
 
+	DataSetHash *dataset;
+
 	u = WS_Reserve(ctx->ws, 0);
 	p = ctx->ws->f;
 
+	dataset = DataSetHashGet(global.manager);
 	v = snprintf(p, u, "%d-%d-%d",
-		DataSetHashGet(global.manager)->header.published.year,
-		(int)DataSetHashGet(global.manager)->header.published.month,
-		(int)DataSetHashGet(global.manager)->header.published.day);
+		dataset->header.published.year,
+		(int)dataset->header.published.month,
+		(int)dataset->header.published.day);
 	// Skip over the null terminator
 	v++;
 	if (v > u) {
+		DataSetHashRelease(dataset);
 		WS_Release(ctx->ws, 0);
 		return (NULL);
 	}
+	DataSetHashRelease(dataset);
 	WS_Release(ctx->ws, v);
 	return (p);
 }
@@ -327,55 +355,23 @@ void vmod_set_max_concurrency(const struct vrt_ctx *ctx, VCL_INT concurrency)
 	global.maxConcurrency.set = true;
 }
 
+/* Error message format */
+#define VMODFOD_MSG_FORMAT "vmod_fiftyonedegrees: %s\n"
+/* Property has no values message format */
+#define VMODFOD_PROP_NO_VALUES_MSG_FORMAT \
+"vmod_fiftyonedegrees: Property %s has no values (Reason: %s)\n"
+
 /**
  * Method to print appropriate error message and then terminate
  * @param filePath path to the data file
  */
 static void loadFileError(const char *filePath)
 {
-	// The initialisation was unsuccessful, so throw the correct error
-	// message.
-	switch (global.status) {
-		case INSUFFICIENT_MEMORY:
-			fprintf(stderr,
-				"vmod_fiftyonedegrees: Insufficient memory allocated.\n");
-			break;
-		case CORRUPT_DATA:
-			fprintf(stderr,
-				"vmod_fiftyonedegrees: The data was not in the correct "
-				"format. Check the data file is uncompressed.\n");
-		    break;
-		case INCORRECT_VERSION:
-			fprintf(stderr,
-				"vmod_fiftyonedegrees: The data is an unsupported "
-				"version. Check you have the latest data and API.\n");
-		    break;
-		case FILE_NOT_FOUND:
-			fprintf(stderr,
-				"vmod_fiftyonedegrees: The data file '%s' could not be "
-				"found. Check the file path and that the program has "
-				"sufficient read permissions.\n",
-				filePath);
-			break;
-		case NULL_POINTER:
-			fprintf(stderr,
-				"vmod_fiftyonedegrees: Null pointer to the existing "
-				"dataset or memory location.\n");
-		    break;
-		case POINTER_OUT_OF_BOUNDS:
-			fprintf(stderr,
-				"vmod_fiftyonedegrees: Allocated continuous memory "
-				"containing 51Degrees data file appears to be smaller "
-				"than expected. Most likely because the data file was "
-				"not fully loaded into the allocated memory.\n");
-		    break;
-		case NOT_SET:
-		default:
-			fprintf(stderr,
-				"vmod_fiftyonedegrees: Could not create data set from "
-				"file.\n");
-		    break;
-	}
+	// Get message corresponding to the global status
+	fprintf(stderr,
+		VMODFOD_MSG_FORMAT,
+		StatusGetMessage(global.status, filePath));
+	// Failed to load. The process should terminate.
 	abort();
 }
 
@@ -488,11 +484,15 @@ void vmod_reload(const struct vrt_ctx *ctx, struct vmod_reload_arg *a) {
 	}
 	else
 	{
-		filePath = DataSetGet(global.manager)->masterFileName;
+		// Get a safe reference to dataset
+		DataSetBase *dataset = DataSetGet(global.manager);
+		filePath = dataset->masterFileName;
 		// Reload the manager from the original file
 		global.status = HashReloadManagerFromOriginalFile(
 			global.manager,
 			exception);
+		// Release the safe reference
+		DataSetRelease(dataset);
 	}
 	EXCEPTION_THROW
 
@@ -630,10 +630,21 @@ static unsigned writeValue(
 		}
 		else
 		{
+			// Get the reason message for property having no values
+			const char *reasonMessage = fiftyoneDegreesResultsHashGetNoValueReasonMessage(
+					fiftyoneDegreesResultsHashGetNoValueReason(results, 
+						requiredPropertyIndex,
+						exception));
+			// Check exception and set message appropriately.
+			if (EXCEPTION_FAILED)
+				reasonMessage = "Failed to obtain the reason";
+
 			// Print a message to indicate that property has no values.
 			fprintf(stderr,
-					"vmod_fiftyonedegrees: Property %s has no values.\n",
-					getRequiredPropertyName(results, requiredPropertyIndex));
+				VMODFOD_PROP_NO_VALUES_MSG_FORMAT,
+				getRequiredPropertyName(results, requiredPropertyIndex),
+				reasonMessage);
+			
 			// Print a null terminator to indicate that the value is empty
 			snprintf(p, u, "%c", '\0');
 		}
@@ -893,7 +904,10 @@ VCL_STRING vmod_match_single(
  */
 static int getHeaderCount()
 {
-	return DataSetGet(global.manager)->uniqueHeaders->count;
+	DataSetBase *dataset = DataSetGet(global.manager);
+	int count = dataset->uniqueHeaders->count;
+	DataSetRelease(dataset);
+	return count;
 }
 
 /**
@@ -903,7 +917,10 @@ static int getHeaderCount()
  */
 static const char *getHeaderName(
 	int headerIndex) {
-	return STRING(DataSetGet(global.manager)->uniqueHeaders->items[headerIndex].name.data.ptr);
+	DataSetBase *dataset = DataSetGet(global.manager);
+	const char *headerName = STRING(dataset->uniqueHeaders->items[headerIndex].name.data.ptr);
+	DataSetRelease(dataset);
+	return headerName;
 }
 
 /**

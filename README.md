@@ -149,7 +149,9 @@ $ sudo make install
 
 Where `--with-config`  [optional] sets the version that will be built. `release` and `test` versions are identical, except that the `test` version expose some additional functions to support the testing process. Only `release` version is recommended for production. By default `release` version is built.
 
-When varnish is installed in a non standard directory, please set the value of environment variable `VARNISHSRC` to point to where the varnish source resides (e.g. ``export VARNISHSRC=/usr/include/varnish``).
+When varnish is installed in a non standard directory, please set the value of environment variable `VARNISHSRC` to point to where the varnish source resides before running the `configure` (e.g. ``export VARNISHSRC=/usr/include/varnish``).
+
+The location of where the module will be installed can also be customised by setting the environment variable `VMOD_DIR` before running the `configure`.
 
   
 
@@ -310,7 +312,7 @@ giving three separate headers.
 
 ### Example
 
-Start Varnish using the example VCL within the device-detection-varnish directory with:
+Start Varnish using the example VCL within the device-detection-varnish directory with (**NOTE**: The data file path used by the `start` API in the `vcl_init` block will need to be updated before proceed):
 
 ```
 
