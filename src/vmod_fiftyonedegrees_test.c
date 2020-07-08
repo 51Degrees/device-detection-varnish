@@ -36,6 +36,7 @@
 typedef struct vmodfod_global_test_t {
 	vmodfod_config_int expectedDrift;
 	vmodfod_config_int expectedDifference;
+	vmodfod_config_bool expectedHasValues;
 } vmodfod_global_test;
 
 /* Set default test expected value */
@@ -48,6 +49,17 @@ extern vmodfod_global global;
 ResultsHash *obtainResultsFromAvailableHeaders(
 	const struct vrt_ctx *ctx,
 	Exception *exception);
+
+bool ResultsHashGetHasValuesDecor(
+	ResultsHash *results,
+	int requiredPropertyIndex,
+	Exception *exception)
+{
+	bool hasValues = ResultsHashGetHasValues(results, requiredPropertyIndex, exception);
+	if (globalTest.expectedHasValues.set)
+		hasValues = globalTest.expectedHasValues.value;
+	return hasValues;
+}
 
 ResultsHash *obtainResultsFromAvailableHeadersDecor(
 	const struct vrt_ctx *ctx,
@@ -73,6 +85,12 @@ void vmod_set_expected_difference(const struct vrt_ctx *ctx, VCL_INT difference)
 {
 	globalTest.expectedDifference.value = difference;
 	globalTest.expectedDifference.set = true;
+}
+
+void vmod_set_expected_has_values(const struct vrt_ctx *ctx, VCL_STRING hasValues)
+{
+	globalTest.expectedHasValues.value = VMODFOD_GET_BOOL(hasValues);
+	globalTest.expectedHasValues.set = true;
 }
 
 VCL_STRING vmod_get_performance_profile(const struct vrt_ctx *ctx)
