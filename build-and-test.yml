@@ -27,11 +27,11 @@ steps:
       destinationFolder: $(Build.SourcesDirectory)
       cleanDestinationFolder: false
 
-  - bash: '$(Build.SourcesDirectory)/autogen.sh && $(Build.SourcesDirectory)/configure && make && make install'
+  - bash: './autogen.sh && ./configure && make && make install'
     workingDirectory: $(Build.SourcesDirectory)/varnish-6.0.6
     displayName: 'Build and Install Varnish 6.0.6'
 
-  - script: rm -rf $(Build.SourcesDirectory)/varnish-6.0.6
+  - script: rm -rf varnish-6.0.6
     workingDirectory: $(Build.SourcesDirectory)
     displayName: "Remove Varnish-6.0.6 After Installation"
 
@@ -39,11 +39,11 @@ steps:
     submodules: recursive
     lfs: true
 
-  - bash: '$(Build.SourcesDirectory)/autogen.sh'
+  - bash: './autogen.sh'
     workingDirectory: $(Build.SourcesDirectory)
     displayName: 'Run autogen.sh'
 
-  - bash: '$(Build.SourcesDirectory)/configure.sh --with-config=test'
+  - bash: './configure.sh --with-config=test'
     workingDirectory: $(Build.SourcesDirectory)
     displayName: 'Run configure'
 
