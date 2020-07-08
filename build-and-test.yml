@@ -13,7 +13,8 @@ pool:
   vmImage: $(imageName)
 
 steps:
-  - script: sudo apt-get -y install autotools-dev python-docutils
+  - script: |
+      sudo apt-get -y install autotools-dev python-docutils python-sphinx pcre libtool
     displayName: 'Install autotools-dev'
 
   - script: wget https://varnish-cache.org/_downloads/varnish-6.0.6.tgz
