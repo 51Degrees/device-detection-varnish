@@ -5,7 +5,6 @@ config.*
 autom4te.cache/*
 src/.deps/*
 src/.libs/*
-src/device-detection-cxx
 src/vmod_fiftyonedegrees.vcc
 src/vmod_fiftyonedegrees_extra.h
 bin/*
