@@ -42,7 +42,7 @@ steps:
       destinationFolder: $(Build.SourcesDirectory)
       cleanDestinationFolder: false
 
-  - bash: './autogen.sh && ./configure && make && make install'
+  - bash: './autogen.sh && ./configure && make && sudo make install'
     workingDirectory: $(Build.SourcesDirectory)/varnish-6.0.6
     displayName: 'Build and Install Varnish 6.0.6'
 
@@ -66,7 +66,7 @@ steps:
     workingDirectory: $(Build.SourcesDirectory)
     displayName: 'Build'
 
-  - bash: 'make check'
+  - bash: 'sudo make check'
     workingDirectory: $(Build.SourcesDirectory)
     failOnStderr: true
     displayName: 'Run Tests'
