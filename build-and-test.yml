@@ -1,0 +1,57 @@
+name: Build and Test Device Detection Varnish
+
+trigger: none
+
+strategy:
+  matrix:
+    ubuntu-18:
+      imageName: ubuntu-18.04
+    ubuntu-16:
+      imageName: ubuntu-16.04
+
+pool:
+  vmImage: $(imageName)
+
+steps:
+  - script: sudo apt-get -y install autotools-dev
+    displayName: 'Install autotools-dev'
+
+  - script: wget https://varnish-cache.org/_downloads/varnish-6.0.6.tgz
+    workingDirectory: $(Build.SourcesDirectory)
+    displayName: 'Download Varnish 6.0.6'
+
+  - task: ExtractFiles@1
+    displayName: 'Extract Varnish 6.0.6'
+    inputs:
+      archiveFilePatterns: 'varnish-6.0.6.tgz'
+      destinationFolder: $(Build.SourcesDirectory)
+      cleanDestinationFolder: false
+
+  - bash: '$(Build.SourcesDirectory)/autogen.sh && $(Build.SourcesDirectory)/configure && make && make install'
+    workingDirectory: $(Build.SourcesDirectory)/varnish-6.0.6
+    displayName: 'Build and Install Varnish 6.0.6'
+
+  - script: rm -rf $(Build.SourcesDirectory)/varnish-6.0.6
+    workingDirectory: $(Build.SourcesDirectory)
+    displayName: "Remove Varnish-6.0.6 After Installation"
+
+  - checkout: self
+    submodules: recursive
+    lfs: true
+
+  - bash: '$(Build.SourcesDirectory)/autogen.sh'
+    workingDirectory: $(Build.SourcesDirectory)
+    displayName: 'Run autogen.sh'
+
+  - bash: '$(Build.SourcesDirectory)/configure.sh --with-config=test'
+    workingDirectory: $(Build.SourcesDirectory)
+    displayName: 'Run configure'
+
+  - bash: 'make'
+    workingDirectory: $(Build.SourcesDirectory)
+    displayName: 'Build'
+
+  - bash: 'make check'
+    workingDirectory: $(Build.SourcesDirectory)
+    failOnStderr: true
+    displayName: 'Run Tests'
