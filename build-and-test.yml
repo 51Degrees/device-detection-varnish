@@ -14,8 +14,22 @@ pool:
 
 steps:
   - script: |
-      sudo apt-get -y install autotools-dev python-docutils python-sphinx pcre libtool
-    displayName: 'Install autotools-dev'
+      sudo apt-get -y install \
+        make \
+        automake \
+        autotools-dev \
+        libedit-dev \
+        libjemalloc-dev \
+        libncurses-dev \
+        libpcre3-dev \
+        libtool \
+        pkg-config \
+        python3-docutils \
+        python3-sphinx \
+        cpio \
+        graphviz \
+        autoconf-archive
+    displayName: 'Install prerequisites'
 
   - script: wget https://varnish-cache.org/_downloads/varnish-6.0.6.tgz
     workingDirectory: $(Build.SourcesDirectory)
