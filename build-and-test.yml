@@ -54,11 +54,11 @@ steps:
     submodules: recursive
     lfs: true
 
-  - bash: './autogen.sh'
+  - bash: 'chmod a+x autogen.sh && ./autogen.sh'
     workingDirectory: $(Build.SourcesDirectory)
     displayName: 'Run autogen.sh'
 
-  - bash: './configure.sh --with-config=test'
+  - bash: './configure --with-config=test'
     workingDirectory: $(Build.SourcesDirectory)
     displayName: 'Run configure'
 
