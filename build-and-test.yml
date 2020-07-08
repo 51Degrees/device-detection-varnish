@@ -66,7 +66,13 @@ steps:
     workingDirectory: $(Build.SourcesDirectory)
     displayName: 'Build'
 
-  - bash: 'sudo make check'
+  - bash: |
+      export PATH=/usr/local/sbin:$PATH
+      export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
+      ls -a /usr/local/lib
+      echo $PATH
+      echo $LD_LIBRARY_PATH
+      make check
     workingDirectory: $(Build.SourcesDirectory)
     failOnStderr: true
     displayName: 'Run Tests'
