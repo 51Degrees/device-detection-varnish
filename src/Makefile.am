@@ -1,4 +1,4 @@
-AM_CPPFLAGS = -Wall
+AM_CPPFLAGS = -Wall -Wno-unused-variable -Wno-missing-braces -Wno-implicit-function-declaration -Wno-strict-aliasing -Werror
 
 vmoddir = @VMOD_DIR@
 vmod_LTLIBRARIES = libvmod_fiftyonedegrees.la
