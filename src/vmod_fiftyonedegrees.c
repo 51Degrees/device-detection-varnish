@@ -355,14 +355,29 @@ void vmod_set_max_concurrency(const struct vrt_ctx *ctx, VCL_INT concurrency)
 	global.maxConcurrency.set = true;
 }
 
+/**
+ * Method used to log the exception message to the standard error
+ * @param exception the exception
+ */
+static void logExceptionMessage(Exception *exception)
+{
+	const char *message = ExceptionGetMessage(exception);
+	if (message != NULL) {
+		fputs(message, stderr);
+		fiftyoneDegreesFree((void*)message);
+	}
+}
+
 /* Error message format */
 #define VMODFOD_MSG_FORMAT "vmod_fiftyonedegrees: %s\n"
 /* Property has no values message format */
 #define VMODFOD_PROP_NO_VALUES_MSG_FORMAT \
 "vmod_fiftyonedegrees: Property %s has no values (Reason: %s)\n"
+#define VMODFOD_UNRECOGNIZED_PERF_PROFILE_MSG_FORMAT \
+"vmod_fiftyonedegrees: Cannot recognize the performance profile %s. Revert to DEFAULT\n"
 
 /**
- * Method to print appropriate error message and then terminate
+ * Method to print appropriate error message
  * @param filePath path to the data file
  */
 static void loadFileError(const char *filePath)
@@ -371,7 +386,15 @@ static void loadFileError(const char *filePath)
 	fprintf(stderr,
 		VMODFOD_MSG_FORMAT,
 		StatusGetMessage(global.status, filePath));
-	// Failed to load. The process should terminate.
+}
+
+/**
+ * Method to print appropriate error message and then terminate
+ * @param filePath path to the data file
+ */
+static void loadFileErrorAbort(const char *filePath)
+{
+	loadFileError(filePath);
 	abort();
 }
 
@@ -400,6 +423,10 @@ static void initConfig()
 	}
 	else
 	{
+		if (strcmp(global.performanceProfile, "DEFAULT") != 0)
+			fprintf(stderr,
+				VMODFOD_UNRECOGNIZED_PERF_PROFILE_MSG_FORMAT,
+				global.performanceProfile);
 		*global.config = HashDefaultConfig;
 	}
 
@@ -457,8 +484,8 @@ void vmod_start(const struct vrt_ctx *ctx, VCL_STRING filePath)
 	
 	if (global.status != SUCCESS) {
 		// The initialisation was unsuccessful,
-		// throw the correct error message
-		loadFileError(filePath);
+		// throw the correct error message and abort
+		loadFileErrorAbort(filePath);
 	}
 }
 
@@ -494,24 +521,18 @@ void vmod_reload(const struct vrt_ctx *ctx, struct vmod_reload_arg *a) {
 		// Release the safe reference
 		DataSetRelease(dataset);
 	}
-	EXCEPTION_THROW
+	if (EXCEPTION_FAILED) {
+		// Log an exception message
+		logExceptionMessage(exception);
+	}
 
 	if (global.status != SUCCESS) {
-		// Print out an error and abort.
+		// Print out an error.
 		loadFileError(filePath);
-	}
-}
-
-/**
- * Method used to log the exception message to the standard error
- * @param exception the exception
- */
-static void logExceptionMessage(Exception *exception)
-{
-	const char *message = ExceptionGetMessage(exception);
-	if (message != NULL) {
-		fputs(message, stderr);
-		fiftyoneDegreesFree((void*)message);
+		// Reload failed but the old one will still be left in place
+		// Thus, reset the status to success so the manager can be
+		// freed when the module is discarded.
+		global.status = SUCCESS;
 	}
 }
 
@@ -676,19 +697,19 @@ unsigned getValue(
 	char *currentPropertyName;
 	bool found = false;
 
-	if (strcmp(requiredPropertyName, "Iterations") == 0)
+	if (StringCompare(requiredPropertyName, "Iterations") == 0)
 	{
 		v = snprintf(p, u, "%d", results->items->iterations);
 	}
-	else if (strcmp(requiredPropertyName, "Drift") == 0)
+	else if (StringCompare(requiredPropertyName, "Drift") == 0)
 	{
 		v = snprintf(p, u, "%d", results->items->drift);
 	}
-	else if (strcmp(requiredPropertyName, "Difference") == 0)
+	else if (StringCompare(requiredPropertyName, "Difference") == 0)
 	{
 		v = snprintf(p, u, "%d", results->items->difference);
 	}
-	else if (strcmp(requiredPropertyName, "Method") == 0)
+	else if (StringCompare(requiredPropertyName, "Method") == 0)
 	{
 		const char *method;
 		switch (results->items->method) {
@@ -708,15 +729,15 @@ unsigned getValue(
 		}
 		v = snprintf(p, u, "%s", method);	
 	}
-	else if (strcmp(requiredPropertyName, "UserAgents") == 0)
+	else if (StringCompare(requiredPropertyName, "UserAgents") == 0)
 	{
 		v = snprintf(p, u, "%s", results->items->b.matchedUserAgent);
 	}
-	else if (strcmp(requiredPropertyName, "MatchedNodes") == 0)
+	else if (StringCompare(requiredPropertyName, "MatchedNodes") == 0)
 	{
 		v = snprintf(p, u, "%d", results->items->matchedNodes);
 	}
-	else if (strcmp(requiredPropertyName, "DeviceId") == 0)
+	else if (StringCompare(requiredPropertyName, "DeviceId") == 0)
 	{
 		EXCEPTION_CREATE;
 		char deviceId[40];
@@ -743,7 +764,7 @@ unsigned getValue(
 		{
 			currentPropertyName =
 				(char*)getRequiredPropertyName(results, i);
-			if (strcmp(currentPropertyName, requiredPropertyName) == 0)
+			if (StringCompare(currentPropertyName, requiredPropertyName) == 0)
 			{
 				// This if the property we want, so write the values to the
 				// workspace
@@ -937,7 +958,7 @@ static char *searchHeaders(const struct vrt_ctx *ctx, const char *headerName)
 	{
 		currentHeader = (char*)ctx->http_req->hd[i].b;
 		if (currentHeader != NULL
-			&& strncmp(currentHeader, headerName, strlen(headerName)) == 0)
+			&& StringCompareLength(currentHeader, headerName, strlen(headerName)) == 0)
 		{
 			return currentHeader + strlen(headerName) + 2;
 		}
