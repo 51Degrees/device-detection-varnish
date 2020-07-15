@@ -54,23 +54,25 @@ CONFIG_OPTION(bool)
  * which are required in multiple parts of the module.
  */
 typedef struct vmodfod_global_t {
-	ResourceManager *manager; /* Single manager instance constructed at startup. */
-	ConfigHash *config;
-	vmodfod_config_int drift; /* Drift value that allows substrings to be matched in a 
+	ResourceManager *manager; /**< Single manager instance constructed at startup. */
+	ConfigHash *config; /**< Single config instance constructed at startup. */
+	vmodfod_config_int drift; /**< Drift value that allows substrings to be matched in a 
 								 wider range of character positions. */
-	vmodfod_config_int difference; /* Difference value to allow User-Agents where the character
+	vmodfod_config_int difference; /**< Difference value to allow User-Agents where the character
 									  is slightly different from what is expected. */
-	vmodfod_config_int maxConcurrency; /* Max number of concurrent requests to be expected. */
-	vmodfod_config_bool allowUnmatched; /* Allow unmatched results. */
-	vmodfod_config_bool usePerformanceGraph; /* Use performance optimized graph. */
-	vmodfod_config_bool usePredictiveGraph; /* Use predictive optimized graph. */
-	const char *performanceProfile; /* The performance profile name. */
-	const char *requiredProperties; /*  The required properties. */
-	const char *propertyDelimiter; /* The delimiter to use when returning value strings. */
-	StatusCode status; /* Status returned when the provider is initialised. */
+	vmodfod_config_int maxConcurrency; /**< Max number of concurrent requests to be expected. */
+	vmodfod_config_bool allowUnmatched; /**< Allow unmatched results. */
+	vmodfod_config_bool usePerformanceGraph; /**< Use performance optimized graph. */
+	vmodfod_config_bool usePredictiveGraph; /**< Use predictive optimized graph. */
+	const char *performanceProfile; /**< The performance profile name. */
+	const char *requiredProperties; /**<  The required properties. */
+	const char *propertyDelimiter; /**< The delimiter to use when returning value strings. */
+	StatusCode status; /**< Status returned when the provider is initialised. */
 } vmodfod_global;
 
-/* Default global, set before being updated by the VCL. */
+/**
+ * Default global, set before being updated by the VCL.
+ */
 #define VMODFOD_DEFAULTGLOBAL \
 { \
 	NULL, \
@@ -87,7 +89,9 @@ typedef struct vmodfod_global_t {
 	NOT_SET \
 }
 
-/* Convert string 'YES'|'NO' to corresponding boolean value */
+/*
+ * Convert string 'YES'|'NO' to corresponding boolean value
+ */
 #define VMODFOD_GET_BOOL(s) strcmp(s, "YES") == 0 ? true : false
 
 /* Forward declarations */

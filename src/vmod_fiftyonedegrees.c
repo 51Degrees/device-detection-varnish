@@ -35,7 +35,16 @@
 #include "vcc_if.h"
 #include "vmod_fiftyonedegrees_interface.h"
 
-// Global structure available to the module.
+
+/**
+ * @defgroup vmod_fiftyonedegrees 51Degrees VMOD Internals
+ *
+ * @{
+ */
+
+/**
+ * Global structure available to the module.
+ */
 vmodfod_global global = VMODFOD_DEFAULTGLOBAL;
 
 /**
@@ -368,11 +377,18 @@ static void logExceptionMessage(Exception *exception)
 	}
 }
 
-/* Error message format */
+/**
+ * Error message format
+ */
 #define VMODFOD_MSG_FORMAT "vmod_fiftyonedegrees: %s\n"
-/* Property has no values message format */
+/**
+ * Property has no values message format
+ */
 #define VMODFOD_PROP_NO_VALUES_MSG_FORMAT \
 "vmod_fiftyonedegrees: Property %s has no values (Reason: %s)\n"
+/**
+ * Performance profile is not recognized
+ */
 #define VMODFOD_UNRECOGNIZED_PERF_PROFILE_MSG_FORMAT \
 "vmod_fiftyonedegrees: Cannot recognize the performance profile %s. Revert to DEFAULT\n"
 
@@ -400,7 +416,6 @@ static void loadFileErrorAbort(const char *filePath)
 
 /**
  * Method used to init a ConfigHash object
- * @param config the config object
  */
 static void initConfig()
 {
@@ -1129,3 +1144,7 @@ VCL_STRING vmod_match_all(
 	WS_Release(ctx->ws, v);
 	return (returnString);
 }
+
+/**
+ * @}
+ */

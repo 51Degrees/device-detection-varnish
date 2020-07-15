@@ -4,9 +4,8 @@
  <navindex>
   <tab type="user" visible="yes" title="General Docs" url="../../documentation/4.1/index.html"/>
   <tab type="pages" visible="yes" title="" intro=""/>
-  <tab type="modules" visible="yes" title="C Modules" intro="51Degrees C modules. These contain the core logic which the C++ classes are built around."/>
-  <tab type="namespacelist" visible="yes" title="C++ Namespaces" intro="51Degrees C++ namespaces. These contain the classes which expose the functionality of the C API in an object oriented way."/>
-  <tab type="examples" visible="yes" title="Examples" intro="51Degrees Device Detection API examples. These show how the API can be used for a few example use cases."/>
+  <tab type="modules" visible="yes" title="Varnish Module" intro="51Degrees Varnish module. These contain the logic which expose the functionality of the C API to Varnish VCL."/>
+  <tab type="examples" visible="yes" title="Examples" intro="51Degrees Device Detection API examples for Varnish. These show how the API can be used in Varnish VCL."/>
 
  </navindex>
 
