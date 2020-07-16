@@ -4,11 +4,11 @@
 
   
 
-[Supported Databases](https://51degrees.com/compare-data-options?utm_source=github&utm_medium=repository&utm_content=compare-data-options&utm_campaign=varnish-open-source  "Different device databases which can be used with 51Degrees device detection") | [Developer Documention](https://51degrees.com/support/documentation?utm_source=github&utm_medium=repository&utm_content=documentation&utm_campaign=varnish-open-source  "Full getting started guide and advanced developer documentation") | [Available Properties](https://51degrees.com/resources/property-dictionary?utm_source=github&utm_medium=repository&utm_content=property_dictionary&utm_campaign=varnish-open-source  "View all available properties and values")
+[Supported versions](https://51degrees.com/documentation/4.1/_info__version_support.html) | [Developer documentation](https://51degrees.com/documentation/4.1/_other_integrations__varnish.html) | [Available properties](https://51degrees.com/developers/property-dictionary) | [Pricing](https://51degrees.com/pricing)
 
-  
 
-<sup>Need [.NET](https://github.com/51Degrees/.NET-Device-Detection "THE Fastest and most Accurate device detection for .NET") | [Java](https://github.com/51Degrees/Java-Device-Detection "THE Fastest and most Accurate device detection for Java") | [PHP Script](https://github.com/51Degrees/51Degrees-PHP)?</sup>
+
+<sup>Need [.NET](https://github.com/51Degrees/device-detection-dotnet "THE Fastest and most Accurate device detection for .NET") | [Java](https://github.com/51Degrees/device-detection-java "THE Fastest and most Accurate device detection for Java") | [PHP Script](https://github.com/51Degrees/device-detection-php)?</sup>
 
   
 
