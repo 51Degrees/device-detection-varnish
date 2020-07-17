@@ -1,6 +1,6 @@
 # 51Degrees Device Detection VMOD
 
-<img src="https://51degrees.com/Logo.png?utm_source=github&utm_medium=repository&utm_campaign=varnish_open_source&utm_content=readme_main" alt="51Degrees" title="THE Fastest and Most Accurate Device Detection" width="255" height="50" class="inline"> **Device Detection in C** Varnish module
+![51Degrees](https://51degrees.com/img/logo.png?utm_source=github&utm_medium=repository&utm_campaign=varnish_open_source&utm_content=readme_main "Data rewards the curious") **Device Detection in C** Varnish module
 
 [Developer documentation](https://51degrees.com/documentation/4.1/_other_integrations__varnish.html)
 
