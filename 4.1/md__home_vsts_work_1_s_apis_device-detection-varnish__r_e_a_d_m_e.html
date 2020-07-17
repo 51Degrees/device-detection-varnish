@@ -68,18 +68,12 @@ $(document).ready(function(){initNavTree('md__home_vsts_work_1_s_apis_device-det
 <h2 class="g-docs__page-title">51Degrees Device Detection VMOD </h2></div><!--header-->
 <div class="g-docs__inner">
 <div class="g-docs__primary" id="primary">
-<section class="g-docs__section"><img src="https://51degrees.com/DesktopModules/FiftyOne/Distributor/Logo.ashx?utm_source=github&utm_medium=repository&utm_content=readme_main&utm_campaign=varnish-open-source" alt="51Degrees" title="THE Fastest and Most Accurate Device Detection" class="inline"/>
+<section class="g-docs__section"><img src="https://51degrees.com/Logo.png?utm_source=github&utm_medium=repository&utm_campaign=varnish_open_source&utm_content=readme_main" alt="51Degrees" title="THE Fastest and Most Accurate Device Detection" width="255" height="50" class="inline" class="inline"/>
  <b>Device Detection in C</b> Varnish module</p>
-<p><a href="https://51degrees.com/documentation/4.1/_info__version_support.html">Supported versions</a> | <a href="https://51degrees.com/documentation/4.1/_other_integrations__varnish.html">Developer documentation</a> | <a href="https://51degrees.com/developers/property-dictionary">Available properties</a> | <a href="https://51degrees.com/pricing">Pricing</a></p>
-<p><sup>Need <a href="https://github.com/51Degrees/device-detection-dotnet" title="THE Fastest and most Accurate device detection for .NET">.NET</a> | <a href="https://github.com/51Degrees/device-detection-java" title="THE Fastest and most Accurate device detection for Java">Java</a> | <a href="https://github.com/51Degrees/device-detection-php">PHP Script</a>?</sup></p>
+<p><a href="https://51degrees.com/documentation/4.1/_other_integrations__varnish.html">Developer documentation</a></p>
 <h2>Introduction</h2>
-<p>In a VCL file, use like...</p>
-<div class="c-code__block c-code__block--outline"><div class="c-code__line">import fiftyonedegrees;</div><div class="c-code__line"></div><div class="c-code__line">  </div><div class="c-code__line"></div><div class="c-code__line">sub vcl_deliver {</div><div class="c-code__line"></div><div class="c-code__line"># This sets resp.http.X-IsMobile to &quot;True&quot;/&quot;False&quot;.</div><div class="c-code__line"></div><div class="c-code__line">set resp.http.X-IsMobile = fiftyonedegrees.match_all(&quot;IsMobile&quot;);</div><div class="c-code__line"></div><div class="c-code__line">}</div><div class="c-code__line"></div><div class="c-code__line">  </div><div class="c-code__line"></div><div class="c-code__line">sub vcl_init {</div><div class="c-code__line"></div><div class="c-code__line"># Initialise the resource manager with the data file.</div><div class="c-code__line"></div><div class="c-code__line">fiftyonedegrees.start(&quot;/home/51Degrees/data/51Degrees.dat&quot;);</div><div class="c-code__line"></div><div class="c-code__line">}</div></div><p>... to turn User-Agent HTTP headers into useful information about physical screen size, device price and type of device.</p>
-<p>Use this project to detect device properties using HTTP browser User-Agents as input using the patented pattern detection method.</p>
-<p>Detection method:</p>
-<p><b>Hash:</b> A small binary data file containing User-Agents stored as Hash sequences. Very fast detection time.</p>
-<p>All methods use an external data file which can easily be updated.</p>
-<h2>Dependencies</h2>
+<p>The project contains source code for the Varnish integration of 51Degrees' on-premise Device Detection engine.</p>
+<h2>Pre-requisites</h2>
 <ul>
 <li>gcc</li>
 <li>autoconf</li>
@@ -88,8 +82,7 @@ $(document).ready(function(){initNavTree('md__home_vsts_work_1_s_apis_device-det
 <li>Varnish source</li>
 </ul>
 <p>For Ubuntu based distributions gcc can be found on apt, use</p>
-<div class="c-code__block c-code__block--outline"><div class="c-code__line">$ sudo apt-get install gcc autoconf automake libvarnishapi-dev varnish</div></div><p>and the Varnish source will be automatically downloaded by the make file.</p>
-<h2>Install</h2>
+<div class="c-code__block c-code__block--outline"><div class="c-code__line">$ sudo apt-get install gcc autoconf automake libvarnishapi-dev varnish</div></div><h2>Install</h2>
 <h3>Linux</h3>
 <h4>For an existing Varnish deployment</h4>
 <h5>Enhanced Device Data</h5>
@@ -128,22 +121,22 @@ $(document).ready(function(){initNavTree('md__home_vsts_work_1_s_apis_device-det
 <p>An example configuration file is included in this repository. It shows how to add device information to HTTP headers.</p>
 <h4>Initialising the Resource Manager</h4>
 <p>In the init block is where you should set any settings and initialise the resource manager.</p>
-<div class="c-code__block c-code__block--outline"><div class="c-code__line">import fiftyonedegrees;</div><div class="c-code__line"></div><div class="c-code__line">  </div><div class="c-code__line"></div><div class="c-code__line">sub vcl_init {</div><div class="c-code__line"></div><div class="c-code__line"># Initialise the resource manager with the data file.</div><div class="c-code__line"></div><div class="c-code__line">fiftyonedegrees.start(&quot;/home/51Degrees/data/51Degrees.dat&quot;);</div><div class="c-code__line"></div><div class="c-code__line">}</div></div><h4>Matching</h4>
+<div class="c-code__block c-code__block--outline"><div class="c-code__line">import fiftyonedegrees;</div><div class="c-code__line"></div><div class="c-code__line">sub vcl_init {</div><div class="c-code__line"># Initialise the resource manager with the data file.</div><div class="c-code__line">fiftyonedegrees.start(&quot;/home/51Degrees/data/51Degrees.dat&quot;);</div><div class="c-code__line">}</div></div><h4>Matching</h4>
 <p>Matching can be done is two ways.</p>
 <h5>User-Agent match</h5>
 <p>To get properties using the device's User-Agent use:</p>
-<div class="c-code__block c-code__block--outline"><div class="c-code__line">sub vcl_deliver {</div><div class="c-code__line"></div><div class="c-code__line"># This sets resp.http.X-IsMobile to &quot;True&quot;/&quot;False&quot;.</div><div class="c-code__line"></div><div class="c-code__line">set resp.http.X-IsMobile = fiftyonedegrees.match_single(req.http.user-agent, &quot;IsMobile&quot;);</div><div class="c-code__line"></div><div class="c-code__line">}</div></div><h5>Multiple HTTP header matches</h5>
+<div class="c-code__block c-code__block--outline"><div class="c-code__line">sub vcl_deliver {</div><div class="c-code__line"># This sets resp.http.X-IsMobile to &quot;True&quot;/&quot;False&quot;.</div><div class="c-code__line">set resp.http.X-IsMobile = fiftyonedegrees.match_single(req.http.user-agent, &quot;IsMobile&quot;);</div><div class="c-code__line">}</div></div><h5>Multiple HTTP header matches</h5>
 <p>To get properties from all the relevant HTTP headers from the device use:</p>
-<div class="c-code__block c-code__block--outline"><div class="c-code__line">sub vcl_deliver {</div><div class="c-code__line"></div><div class="c-code__line"># This sets resp.http.X-IsMobile to &quot;True&quot;/&quot;False&quot;.</div><div class="c-code__line"></div><div class="c-code__line">set resp.http.X-IsMobile = fiftyonedegrees.match_all(&quot;IsMobile&quot;);</div><div class="c-code__line"></div><div class="c-code__line">}</div></div><h5>Output Format</h5>
+<div class="c-code__block c-code__block--outline"><div class="c-code__line">sub vcl_deliver {</div><div class="c-code__line"># This sets resp.http.X-IsMobile to &quot;True&quot;/&quot;False&quot;.</div><div class="c-code__line">set resp.http.X-IsMobile = fiftyonedegrees.match_all(&quot;IsMobile&quot;);</div><div class="c-code__line">}</div></div><h5>Output Format</h5>
 <p>The value of the header is set to a comma separated list of values (comma delimited is the default behaviour, but the delimiter can be set explicitly with <code>set_delimiter</code>), these are in the same order the properties are listed in the config file. So setting a header with the line:</p>
 <div class="c-code__block c-code__block--outline"><div class="c-code__line">set resp.http.X-Device = fiftyonedegrees.match_all(&quot;HardwareName,BrowserName,PlatformName&quot;);</div></div><p>will give a header named <code>X-Device</code> with a value like <code>Desktop,Firefox,Ubuntu</code>. Alternatively, headers can be set individually like:</p>
-<div class="c-code__block c-code__block--outline"><div class="c-code__line">set resp.http.X-HardwareName = fiftyonedegrees.match_all(&quot;HardwareName&quot;);</div><div class="c-code__line"></div><div class="c-code__line">set resp.http.X-BrowserName = fiftyonedegrees.match_all(&quot;BrowserName&quot;);</div><div class="c-code__line"></div><div class="c-code__line">set resp.http.X-PlatformName = fiftyonedegrees.match_all(&quot;PlatformName&quot;);</div></div><p>giving three separate headers.</p>
-<h3>Example</h3>
-<p>Start Varnish using the example VCL within the device-detection-varnish directory with (<b>NOTE</b>: The data file path used by the <code>start</code> API in the <code>vcl_init</code> block will need to be updated before proceed):</p>
-<div class="c-code__block c-code__block--outline"><div class="c-code__line">$ varnishd -f /path_to/example.vcl -a localhost:8080 -d</div></div><p>Then, type <code>start</code> to launch the worker process.</p>
+<div class="c-code__block c-code__block--outline"><div class="c-code__line">set resp.http.X-HardwareName = fiftyonedegrees.match_all(&quot;HardwareName&quot;);</div><div class="c-code__line">set resp.http.X-BrowserName = fiftyonedegrees.match_all(&quot;BrowserName&quot;);</div><div class="c-code__line">set resp.http.X-PlatformName = fiftyonedegrees.match_all(&quot;PlatformName&quot;);</div></div><p>giving three separate headers.</p>
+<h2>Example</h2>
+<p>Start Varnish using the example VCLs within the <code>device-detection-varnish/examples/hash</code> directory with (<b>NOTE</b>: The data file path used by the <code>start</code> API in the <code>vcl_init</code> block will need to be updated before proceed):</p>
+<div class="c-code__block c-code__block--outline"><div class="c-code__line">$ varnishd -f /path/to/examples/hash/gettingStarted.vcl -a localhost:8080 -d</div></div><p>Then, type <code>start</code> to launch the worker process.</p>
 <p>In a Linux environment, the headers can be viewed with the command:</p>
-<div class="c-code__block c-code__block--outline"><div class="c-code__line">$ curl localhost:8080 -I -A [SOME USER-AGENT]</div></div><p>which will give the following response:</p>
-<div class="c-code__block c-code__block--outline"><div class="c-code__line">HTTP/1.1 200 OK</div><div class="c-code__line"></div><div class="c-code__line">...</div><div class="c-code__line"></div><div class="c-code__line">X-IsMobile: True</div><div class="c-code__line">X-IsMobileX: True,47,0,0,PERFORMANCE,__zilla/5.0 (iPhone___________e OS 13_3 li__ Mac OS _________________5.1.15 (KHTML,___________) Ve__ion/13.0.4___________________________,19,12280-100440-97270-0</div><div class="c-code__line">X-BrowserName: Mobile Safari</div><div class="c-code__line">X-PlatformName: iOS</div><div class="c-code__line">X-Difference: 0</div><div class="c-code__line">X-Method: PERFORMANCE</div><div class="c-code__line">X-Rank: N/A</div><div class="c-code__line">X-ID: 12280-100440-97270-0</div></div> </section></div><!-- PageDoc -->
+<div class="c-code__block c-code__block--outline"><div class="c-code__line">$ curl localhost:8080 -I -A &quot;Mozilla/5.0 (iPhone; CPU iPhone OS 11_2 like Mac OS X) AppleWebKit/604.4.7 (KHTML, like Gecko) Mobile/15C114&quot;</div></div><p>which will give the following response:</p>
+<div class="c-code__block c-code__block--outline"><div class="c-code__line">HTTP/1.1 200 OK</div><div class="c-code__line">...</div><div class="c-code__line">X-IsMobile: True</div><div class="c-code__line">...</div></div> </section></div><!-- PageDoc -->
 </div><!-- primary -->
 </div><!-- inner-->
 <!-- HTML footer for doxygen 1.8.15-->

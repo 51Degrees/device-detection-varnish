@@ -35,10 +35,7 @@ var NAVTREEHIDESYNC = true;
 
 var NAVTREEINDEX =
 [
-"../../documentation/4.1/index.html",
-"group___fifty_one_degrees_pattern_api.html#ga07aee48830b92bd05d35b455a2a53bf0",
-"group___fifty_one_degrees_synonyms.html#ga3d817e470a58e7d0fdc77065a366570e",
-"group__vmod__fiftyonedegrees.html#ga3c809734905179262ef22015fa4fae2a"
+"../../documentation/4.1/index.html"
 ];
 
 var SYNCONMSG = 'click to disable panel synchronisation';
