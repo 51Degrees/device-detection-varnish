@@ -13,11 +13,13 @@ libvmod_fiftyonedegrees_la_SOURCES = \
 	device-detection-cxx/src/common-cxx/cache.c \
 	device-detection-cxx/src/common-cxx/collection.c \
 	device-detection-cxx/src/common-cxx/component.c \
+	device-detection-cxx/src/common-cxx/coordinate.c \
 	device-detection-cxx/src/common-cxx/data.c \
 	device-detection-cxx/src/common-cxx/dataset.c \
 	device-detection-cxx/src/common-cxx/evidence.c \
 	device-detection-cxx/src/common-cxx/exceptionsc.c \
 	device-detection-cxx/src/common-cxx/file.c \
+	device-detection-cxx/src/common-cxx/float.c \
 	device-detection-cxx/src/common-cxx/headers.c \
 	device-detection-cxx/src/common-cxx/ip.c \
 	device-detection-cxx/src/common-cxx/list.c \
