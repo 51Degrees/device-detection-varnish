@@ -200,6 +200,9 @@ Description
 $Function STRING get_dataset_published_date()
 
 Description
-	Returns the date the dataset was published in the format YYYY-MM-DD
+	Returns the date the dataset was published in the format YYYY-MM-DD.
 
 $Event init_function
+
+Description
+	Initialize the memory used by 51Degrees Device Detection VMOD.

@@ -2,6 +2,7 @@ Makefile
 *.m4
 configure
 config.*
+!config.vcl
 autom4te.cache/*
 src/.deps/*
 src/.libs/*

@@ -29,6 +29,7 @@ libvmod_fiftyonedegrees_la_SOURCES = \
 	device-detection-cxx/src/common-cxx/profile.c \
 	device-detection-cxx/src/common-cxx/properties.c \
 	device-detection-cxx/src/common-cxx/property.c \
+	device-detection-cxx/src/common-cxx/pseudoheader.c \
 	device-detection-cxx/src/common-cxx/resource.c \
 	device-detection-cxx/src/common-cxx/results.c \
 	device-detection-cxx/src/common-cxx/status.c \
