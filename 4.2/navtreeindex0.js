@@ -123,9 +123,10 @@ var NAVTREEINDEX0 =
 "group__vmod__fiftyonedegrees.html#gaf057cefff7ca71a7fe4b2a9de7e09878":[2,0,3],
 "group__vmod__fiftyonedegrees.html#gaf9aa0d6a68f2b0fefba60de813e9bc98":[2,0,19],
 "group__vmod__fiftyonedegrees.html#gafacd6b739b7359ff5824dddeabed94ee":[2,0,22],
-"hash_2getting_started_8vcl-example.html":[3,0],
-"hash_2match_all_8vcl-example.html":[3,1],
-"hash_2metadata_8vcl-example.html":[3,2],
+"hash_2config_8vcl-example.html":[3,0],
+"hash_2getting_started_8vcl-example.html":[3,1],
+"hash_2match_all_8vcl-example.html":[3,2],
+"hash_2metadata_8vcl-example.html":[3,3],
 "md__home_vsts_work_1_s_apis_device-detection-varnish__r_e_a_d_m_e.html":[1],
 "modules.html":[2]
 };
