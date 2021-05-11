@@ -658,11 +658,6 @@ static unsigned writeValue(
 				logExceptionMessage(exception);
 				charactersAdded = 0;
 			}
-			else
-			{
-				// Exclude the null terminator
-				charactersAdded--;
-			}
 		}
 		else
 		{
