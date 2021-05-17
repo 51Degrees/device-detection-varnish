@@ -74,3 +74,30 @@ steps:
     failOnStderr: true
     timeoutInMinutes: 30
     displayName: 'Run Tests'
+
+  - script: |
+      curl "https://distributor.51degrees.com/api/v2/download?LicenseKeys=$(licensekey)&Type=HashV41&Download=True&Product=V4Enterprise" --output Enterprise-HashV41.hash.gz
+    displayName: 'Download Latest Data File'
+
+  - task: ExtractFiles@1
+    displayName: 'Extract Data File'
+    inputs:
+      archiveFilePatterns: 'Enterprise-HashV41.hash.gz'
+      cleanDestinationFolder: false
+
+  - bash: './configure --with-config=test --with-datafile=Enterprise-HashV41.hash'
+    workingDirectory: $(Build.SourcesDirectory)
+    displayName: 'Run configure for Enterprise'
+
+  - bash: 'make'
+    workingDirectory: $(Build.SourcesDirectory)
+    displayName: 'Build'
+
+  - bash: |
+      export PATH=/usr/local/sbin:$PATH
+      export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
+      make check
+    workingDirectory: $(Build.SourcesDirectory)
+    failOnStderr: true
+    timeoutInMinutes: 30
+    displayName: 'Run Tests'

@@ -21,6 +21,7 @@
 #
 
 varnishtest "Test fiftyonedegrees vmod"
+feature cmd {echo "${TEST_BUILD}" | grep -q "true"}
 
 server s1 {
        rxreq

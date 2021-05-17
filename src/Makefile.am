@@ -39,12 +39,21 @@ libvmod_fiftyonedegrees_la_SOURCES = \
 	device-detection-cxx/src/common-cxx/tree.c \
 	device-detection-cxx/src/common-cxx/value.c
 
-if FIFTYONEDEGREES_TEST
-libvmod_fiftyonedegrees_la_SOURCES += vmod_fiftyonedegrees_test.c
+if FIFTYONEDEGREES_DATAFILE_ABS
+datafile = @FIFTYONEDEGREES_DATAFILE@
+else
+datafile = $(abs_top_builddir)/@FIFTYONEDEGREES_DATAFILE@
 endif
 
-AM_CPPFLAGS += -DFIFTYONEDEGREES_HASH
-datafile = $(abs_top_builddir)/src/device-detection-cxx/device-detection-data/51Degrees-LiteV4.1.hash
+testargs = 
+
+if FIFTYONEDEGREES_TEST
+libvmod_fiftyonedegrees_la_SOURCES += vmod_fiftyonedegrees_test.c
+testargs += -DTEST_BUILD=true
+else
+testargs += -DTEST_BUILD=false
+endif
+
 
 nodist_libvmod_fiftyonedegrees_la_SOURCES = \
 	vcc_if.c \
@@ -61,7 +70,8 @@ VMOD_TESTS = $(top_srcdir)/src/tests/*.vtc
 .PHONY: $(VMOD_TESTS)
 
 $(top_srcdir)/src/tests/*.vtc: libvmod_fiftyonedegrees.la
-	@VARNISHTEST@ -Dvarnishd=@VARNISHD@ -Dvmod_fod_datafile=$(datafile) -Dvmod_topbuild=$(abs_top_builddir) $@
+	@VARNISHTEST@ -Dvarnishd=@VARNISHD@ -Dvmod_fod_datafile=$(datafile) -Dvmod_topbuild=$(abs_top_builddir) $@ $(testargs) \
+	|| EC=$$?; if [ "$$EC" != "77" ] ; then (exit $$EC) ; fi;
 
 check: $(VMOD_TESTS)
 
