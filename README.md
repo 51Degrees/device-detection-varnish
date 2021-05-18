@@ -30,12 +30,6 @@ $ sudo apt-get install gcc autoconf automake libvarnishapi-dev varnish
 
 #### For an existing Varnish deployment
 
-##### Enhanced Device Data
-
-By default the module will be built with the Lite Hash data file.
-
-Amend `src/Makefile.am` to use the name of your Premium or Enterprise data file.
-
 ##### Static Module
 
 To install the module into an existing Varnish deployment,
