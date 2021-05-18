@@ -5,20 +5,18 @@
 
 This example is available in full on [GitHub](https://github.com/51Degrees/device-detection-varnish/blob/master/examples/hash/clientHints.vcl).
 
-@include{doc} example-require-datafile.txt
-
-Full client-hints functionality is only available in the Enterprise data file. 
+@include{doc} example-require-datafile.txt 
 
 The path to the data need to be updated before running the example.
 
 Access localhost:8080 from a browser which supports client-hints. the output will show first the
-device properties from the standard headers alone. By clicking the "Use User Agent Client Hints" button,
+device properties from the standard headers alone. By clicking the "Make second request" button,
 the properties will refresh using the client-hint headers fetched from the browser.
 
 Expected output:
 ```
 User Agent Client Hints Example
-Select the Use User Agent Client Hints button below, to use User Agent Client Hint headers in evidence for device detections.
+Select the Make second request button below, to use User Agent Client Hint headers in evidence for device detections.
 ...
 Browser Vendor: Google
 Browser Name: Chrome
@@ -87,7 +85,7 @@ sub vcl_synth {
     // with the properties, it will also send a new header field Accept-CH in response indicating the additional
     // evidence it needs. It builds the new response header using SetHeader[Component name]Accept-CH properties
     // where Component Name is the name of the component for which properties are required.
-    // 3. When 'Use User Agent Client Hints' button will be clicked, device detection request will again
+    // 3. When 'Make second request' button will be clicked, device detection request will again
     // be sent to the server with all additional client hints that was requested in the previous
     // response by the server.
     // 4. Web Server will return the properties based on the new User Agent Client Hint headers

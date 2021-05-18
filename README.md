@@ -51,7 +51,7 @@ $ cd device-detection-varnish
 and install the module with (**NOTE**: if Varnish source was installed using the package manager, its' files will be located under `/usr/include/varnish` directory rather than `/usr/local/include/varnish`. The environment variable `VARNISHSRC` will need to be set to point to this location for the installation to succeed).
 
 ```
-$ .autogen.sh
+$ ./autogen.sh
 
 $ ./configure --with-config=release|test --with-datafile=(optional)
 
