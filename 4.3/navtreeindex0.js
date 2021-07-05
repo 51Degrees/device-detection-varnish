@@ -131,6 +131,6 @@ var NAVTREEINDEX0 =
 "hash_2getting_started_8vcl-example.html":[3,2],
 "hash_2match_all_8vcl-example.html":[3,3],
 "hash_2metadata_8vcl-example.html":[3,4],
-"md__c_1__dev__pipeline_documentation_apis_device-detection-varnish__r_e_a_d_m_e.html":[1],
+"md__home_vsts_work_1_s_apis_device-detection-varnish__r_e_a_d_m_e.html":[1],
 "modules.html":[2]
 };

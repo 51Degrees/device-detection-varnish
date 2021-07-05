@@ -24,7 +24,7 @@ for the JavaScript code in this file
 var NAVTREE =
 [
     [ "General Docs", "../../documentation/4.3/index.html", null ],
-    [ "51Degrees Device Detection VMOD", "md__c_1__dev__pipeline_documentation_apis_device-detection-varnish__r_e_a_d_m_e.html", null ],
+    [ "51Degrees Device Detection VMOD", "md__home_vsts_work_1_s_apis_device-detection-varnish__r_e_a_d_m_e.html", null ],
     [ "Varnish Module", "modules.html", "modules" ],
     [ "Examples", "examples.html", "examples" ]
 ];
