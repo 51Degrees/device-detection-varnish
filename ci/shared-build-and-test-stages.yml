@@ -1,9 +1,15 @@
+parameters:
+- name: runTests
+  type: string
+  default: 'On'
+
 stages:
 - stage: Build_and_Test
 
   jobs:
   - job: Build_and_Test
     displayName: Build and Tests
+    condition: ne(${{ parameters.runTests }}, 'Off')
 
     strategy:
       matrix:
@@ -35,24 +41,24 @@ stages:
             autoconf-archive
         displayName: 'Install prerequisites'
     
-      - script: wget https://varnish-cache.org/_downloads/varnish-6.0.6.tgz
+      - script: wget https://varnish-cache.org/_downloads/varnish-6.0.8.tgz
         workingDirectory: $(Build.SourcesDirectory)
-        displayName: 'Download Varnish 6.0.6'
+        displayName: 'Download Varnish 6.0.8'
     
       - task: ExtractFiles@1
-        displayName: 'Extract Varnish 6.0.6'
+        displayName: 'Extract Varnish 6.0.8'
         inputs:
-          archiveFilePatterns: 'varnish-6.0.6.tgz'
+          archiveFilePatterns: 'varnish-6.0.8.tgz'
           destinationFolder: $(Build.SourcesDirectory)
           cleanDestinationFolder: false
     
       - bash: './autogen.sh && ./configure && make && sudo make install'
-        workingDirectory: $(Build.SourcesDirectory)/varnish-6.0.6
-        displayName: 'Build and Install Varnish 6.0.6'
+        workingDirectory: $(Build.SourcesDirectory)/varnish-6.0.8
+        displayName: 'Build and Install Varnish 6.0.8'
     
-      - script: rm -rf varnish-6.0.6
+      - script: rm -rf varnish-6.0.8
         workingDirectory: $(Build.SourcesDirectory)
-        displayName: "Remove Varnish-6.0.6 After Installation"
+        displayName: "Remove Varnish-6.0.8 After Installation"
     
       - checkout: self
         submodules: recursive
