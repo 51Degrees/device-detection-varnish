@@ -17,6 +17,7 @@ The module is supported for Varnish 6.0.6 (LTS).
 - automake
 - libvarnishapi-dev
 - Varnish source
+- libatomic
   
 For Ubuntu based distributions gcc can be found on apt, use
 

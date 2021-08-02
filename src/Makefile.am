@@ -3,7 +3,7 @@ AM_CPPFLAGS = -Wall -Wno-unused-variable -Wno-missing-braces -Wno-implicit-funct
 vmoddir = @VMOD_DIR@
 vmod_LTLIBRARIES = libvmod_fiftyonedegrees.la
 
-libvmod_fiftyonedegrees_la_LDFLAGS = -module -export-dynamic -avoid-version -shared
+libvmod_fiftyonedegrees_la_LDFLAGS = -module -export-dynamic -avoid-version -shared -latomic
 libvmod_fiftyonedegrees_la_SOURCES = \
 	vmod_fiftyonedegrees.c \
 	device-detection-cxx/src/dataset-dd.c \
