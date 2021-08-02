@@ -21,7 +21,7 @@
 #
 
 varnishtest "Test fiftyonedegrees vmod"
-feature cmd {echo "${TEST_BUILD}" | grep -q "true"}
+feature cmd {echo "${vmod_fod_datafile}" | grep -q "Enterprise"}
 
 server s1 {
        rxreq
@@ -30,21 +30,27 @@ server s1 {
 
 varnish v1 -vcl+backend {
 	import fiftyonedegrees from "${vmod_topbuild}/src/.libs/libvmod_fiftyonedegrees.so";
-
 	sub vcl_deliver {
-		set resp.http.profile = fiftyonedegrees.get_performance_profile();
+		set resp.http.Accept-CH = "existing";
+		fiftyonedegrees.set_resp_headers();
 	}
 	sub vcl_init {
-		fiftyonedegrees.set_performance_profile("LOW_MEMORY");
 		fiftyonedegrees.start("${vmod_fod_datafile}");
 	}
 
 } -start
 
 client c1 {
-	txreq -url "/" -hdr "User-Agent: Mozilla/5.0 (Windows NT 6.3; WOW64; rv:41.0) Gecko/20100101 Firefox/41.0"
+	txreq -url "/" -hdr "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.114 Safari/537.36"
 	rxresp
-	expect resp.http.profile == "LOW_MEMORY"
+	expect resp.http.accept-ch ~ "existing"
+	expect resp.http.accept-ch ~ "SEC-CH-UA"
+	expect resp.http.accept-ch ~ "SEC-CH-UA-Full-Version"
+	expect resp.http.accept-ch ~ "SEC-CH-UA-Platform"
+	expect resp.http.accept-ch ~ "SEC-CH-UA-Platform-Version"
+	expect resp.http.accept-ch ~ "SEC-CH-UA-Model"
+	expect resp.http.accept-ch ~ "SEC-CH-UA-Mobile"
+	expect resp.http.accept-ch ~ "SEC-CH-UA-Arch"
 }
 
 client c1 -run

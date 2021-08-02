@@ -50,6 +50,16 @@ CONFIG_OPTION(int)
 CONFIG_OPTION(bool)
 
 /**
+ * Set header structure used by the set_resp_headers function.
+ */
+typedef struct vmodfod_setHeader_t {
+	const char *name; /**< Name of the header to set. */
+	size_t propertyCount; /**< Number of set header properties pointed to by propertyIndexes. */
+	int *propertyIndexes; /**< Indexes of the set header properties in the available properties
+							to get the header values from. */
+} vmodfod_setHeader;
+
+/**
  * Global structure used by the module. This contains elements
  * which are required in multiple parts of the module.
  */
@@ -68,6 +78,10 @@ typedef struct vmodfod_global_t {
 	const char *requiredProperties; /**<  The required properties. */
 	const char *propertyDelimiter; /**< The delimiter to use when returning value strings. */
 	StatusCode status; /**< Status returned when the provider is initialised. */
+	size_t setHeadersCount; /**< Number of headers in the setHeaders array. */
+	vmodfod_setHeader *setHeaders; /**< Array of response headers to set in the set_resp_headers
+									function. */
+
 } vmodfod_global;
 
 /**
@@ -86,7 +100,9 @@ typedef struct vmodfod_global_t {
 	"DEFAULT", \
 	NULL, \
 	",", \
-	NOT_SET \
+	NOT_SET, \
+	0, \
+	NULL \
 }
 
 /*

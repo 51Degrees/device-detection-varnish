@@ -87,6 +87,28 @@ Example
 
 		set req.http.X-IsMobile = fiftyonedegrees.match_single(req.http.user-agent, "IsMobile");
 
+$Function STRING evidence_used()
+
+Return value
+	STRING List of evidence from the request which will be used by the
+	match_all function, formatted as a JSON string.
+Description
+	Gets the evidence used for matching.
+Example
+	::
+
+		set evidence = fiftyonedegrees.evidence_used();
+
+$Function VOID set_resp_headers()
+
+Description
+	Set the response headers which are supported by the requesting browser. For example,
+	client-hint headers on newer versions of Chrome.
+Example
+	::
+
+		fiftyonedegrees.set_resp_headers();
+
 $Function VOID set_properties(STRING properties)
 
 Description

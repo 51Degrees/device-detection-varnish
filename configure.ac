@@ -63,6 +63,7 @@ PKG_CHECK_VAR([LIBVARNISHAPI_BINDIR], [varnishapi], [bindir])
 PKG_CHECK_VAR([LIBVARNISHAPI_SBINDIR], [varnishapi], [sbindir])
 AC_SUBST([LIBVARNISHAPI_DATAROOTDIR])
 
+# Define the build configuration
 AC_ARG_WITH([config],
 			AS_HELP_STRING([--with-config=(release|test)], [The version of fiftyonedegrees vmod. This can be either release or test. Setting to test will add extra functions to get values stored internally. By default, release version will be built]),
     [config=$withval],
@@ -75,6 +76,22 @@ else
 fi
 
 AM_CONDITIONAL([FIFTYONEDEGREES_TEST], [test x$config = xtest])
+
+# Define the 51Degrees data file path
+AC_ARG_WITH([datafile],
+			AS_HELP_STRING([--with-datafile=path/to/datafile], [The data file to be bundled into the build, this is used by the tests. By default, Lite data file will be used]),
+    [datafile=$withval],
+    [datafile=src/device-detection-cxx/device-detection-data/51Degrees-LiteV4.1.hash])
+
+if test "x$datafile" = "x"; then
+	AC_MSG_NOTICE([Including default data file])
+else
+	AC_MSG_NOTICE([Including data file at '$datafile'])
+fi
+
+AC_SUBST(FIFTYONEDEGREES_DATAFILE, $datafile)
+leadingslash=`echo $datafile | $EGREP -o '^/'`
+AM_CONDITIONAL([FIFTYONEDEGREES_DATAFILE_ABS], [test x$leadingslash = x/])
 
 # Define the version and add the option to redefine in configure.
 AC_ARG_WITH([version],
@@ -140,8 +157,8 @@ AC_CONFIG_FILES(
     Makefile
     src/Makefile)
 
-missingFileMsg=["source file not found, this will be copied automatically if src/src is removed."]
-missingDataMsg=["data file not found, this will be copied automatically if data is removed."]
+missingFileMsg=["source file not found, this is likely because the git submodule has not ben pulled."]
+missingDataMsg=["data file '$datafile' not found."]
 AC_CHECK_FILES(src/device-detection-cxx/src/common-cxx/fiftyone.h,
     [],
     [AC_MSG_ERROR($missingFileMsg)])
@@ -154,7 +171,7 @@ AC_CHECK_FILES(src/device-detection-cxx/src/config-dd.h,
 AC_CHECK_FILES(src/device-detection-cxx/src/results-dd.h,
     [],
     [AC_MSG_ERROR($missingFileMsg)])
-AC_CHECK_FILES(src/device-detection-cxx/device-detection-data/51Degrees-LiteV4.1.hash,
+AC_CHECK_FILES($datafile,
     [],
     [AC_MSG_WARN($missingDataMsg)])
 

@@ -34,6 +34,10 @@ SYNOPSIS
   
    STRING match_single(STRING userAgent, STRING properties)
   
+   STRING evidence_used()
+  
+   VOID set_resp_headers()
+  
    VOID set_properties(STRING properties)
   
    VOID set_delimiter(STRING delimiter)
@@ -74,6 +78,7 @@ fiftyonedegrees.match_*(propertyname).
 CONTENTS
 ========
 
+* :ref:`func_evidence_used`
 * :ref:`func_get_dataset_format`
 * :ref:`func_get_dataset_name`
 * :ref:`func_get_dataset_published_date`
@@ -87,6 +92,7 @@ CONTENTS
 * :ref:`func_set_max_concurrency`
 * :ref:`func_set_performance_profile`
 * :ref:`func_set_properties`
+* :ref:`func_set_resp_headers`
 * :ref:`func_set_use_performance_graph`
 * :ref:`func_set_use_predictive_graph`
 * :ref:`func_start`
@@ -160,6 +166,37 @@ Example
 	::
 
 		set req.http.X-IsMobile = fiftyonedegrees.match_single(req.http.user-agent, "IsMobile");
+
+
+.. _func_evidence_used:
+
+STRING evidence_used()
+----------------------
+
+Return value
+	STRING List of evidence from the request which will be used by the
+	match_all function.
+Description
+	Gets the evidence used for matching.
+Example
+	::
+
+		set evidence = fiftyonedegrees.evidence_used();
+		
+
+
+.. _func_set_resp_headers:
+
+VOID set_resp_headers()
+-----------------------
+
+Description
+	Set the response headers which are supported by the requesting browser. For example,
+	client-hint headers on newer versions of Chrome.
+Example
+	::
+
+		fiftyonedegrees.set_resp_headers();
 
 
 .. _func_set_properties:
@@ -323,7 +360,7 @@ STRING get_dataset_published_date()
 -----------------------------------
 
 Description
-	Returns the date the dataset was published in the format YYYY-MM-DD
+	Returns the date the dataset was published in the format YYYY-MM-DD.
 
 
 COPYRIGHT

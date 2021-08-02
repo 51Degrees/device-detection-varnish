@@ -8,6 +8,8 @@
 
 The project contains source code for the Varnish integration of 51Degrees' on-premise Device Detection engine.
 
+The module is supported for Varnish 6.0.6 (LTS).
+
 ## Pre-requisites
 
 - gcc
@@ -15,6 +17,7 @@ The project contains source code for the Varnish integration of 51Degrees' on-pr
 - automake
 - libvarnishapi-dev
 - Varnish source
+- libatomic
   
 For Ubuntu based distributions gcc can be found on apt, use
 
@@ -27,12 +30,6 @@ $ sudo apt-get install gcc autoconf automake libvarnishapi-dev varnish
 ### Linux
 
 #### For an existing Varnish deployment
-
-##### Enhanced Device Data
-
-By default the module will be built with the Lite Hash data file.
-
-Amend `src/Makefile.am` to use the name of your Premium or Enterprise data file.
 
 ##### Static Module
 
@@ -55,9 +52,9 @@ $ cd device-detection-varnish
 and install the module with (**NOTE**: if Varnish source was installed using the package manager, its' files will be located under `/usr/include/varnish` directory rather than `/usr/local/include/varnish`. The environment variable `VARNISHSRC` will need to be set to point to this location for the installation to succeed).
 
 ```
-$ .autogen.sh
+$ ./autogen.sh
 
-$ ./configure --with-config=release|test
+$ ./configure --with-config=release|test --with-datafile=(optional)
 
 $ make
 
@@ -65,6 +62,8 @@ $ sudo make install
 ```
 
 Where `--with-config`  [optional] sets the version that will be built. `release` and `test` versions are identical, except that the `test` version expose some additional functions to support the testing process. Only `release` version is recommended for production. By default `release` version is built.
+
+`--with-datafile` [optional] sets the data file used by the unit tests. This data file will also be copied on installation.
 
 When varnish is installed in a non standard directory, please set the value of environment variable `VARNISHSRC` to point to where the varnish source resides before running the `configure` (e.g. ``export VARNISHSRC=/usr/include/varnish``).
 
@@ -119,8 +118,8 @@ In the init block is where you should set any settings and initialise the resour
 import fiftyonedegrees;
 
 sub vcl_init {
-# Initialise the resource manager with the data file.
-fiftyonedegrees.start("/home/51Degrees/data/51Degrees.dat");
+    # Initialise the resource manager with the data file.
+    fiftyonedegrees.start("/home/51Degrees/data/51Degrees.dat");
 }
 ```
 
@@ -134,8 +133,8 @@ To get properties using the device's User-Agent use:
 
 ```
 sub vcl_deliver {
-# This sets resp.http.X-IsMobile to "True"/"False".
-set resp.http.X-IsMobile = fiftyonedegrees.match_single(req.http.user-agent, "IsMobile");
+    # This sets resp.http.X-IsMobile to "True"/"False".
+    set resp.http.X-IsMobile = fiftyonedegrees.match_single(req.http.user-agent, "IsMobile");
 }
 ```
 
@@ -145,8 +144,23 @@ To get properties from all the relevant HTTP headers from the device use:
 
 ```
 sub vcl_deliver {
-# This sets resp.http.X-IsMobile to "True"/"False".
-set resp.http.X-IsMobile = fiftyonedegrees.match_all("IsMobile");
+    # This sets resp.http.X-IsMobile to "True"/"False".
+    set resp.http.X-IsMobile = fiftyonedegrees.match_all("IsMobile");
+}
+```
+
+##### Client-Hints
+
+To enable client-hint matching, add the ``set_resp_headers`` to the ``vcl_deliver`` block. This adds the ``Accept-CH`` header to the response if
+it is supported by the browser. The client-hint headers sent by the browser
+are then automatically used by the ``match_all`` method.
+
+```
+sub vcl_deliver {
+    # Enable client-hints
+    fiftyonedegrees.set_resp_headers();
+    # Use the match_all as above.
+    set resp.http.X-IsMobile = fiftyonedegrees.match_all("IsMobile");
 }
 ```
 

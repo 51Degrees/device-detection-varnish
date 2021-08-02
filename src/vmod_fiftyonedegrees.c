@@ -54,8 +54,14 @@ vmodfod_global global = VMODFOD_DEFAULTGLOBAL;
  */
 void privResourceFree(void *ptr)
 {
-	if (global.status == SUCCESS)
+	int i;
+	if (global.status == SUCCESS) {
 		ResourceManagerFree(global.manager);
+		for (i = 0; i < global.setHeadersCount; i++) {
+			free(global.setHeaders[i].propertyIndexes);
+		}
+		free(global.setHeaders);
+	}
 	free(ptr);
 }
 
@@ -473,6 +479,110 @@ static void initConfig()
 	}
 }
 
+static const char* skipComponentName(const char *headerName)
+{
+	// Skip the first uppercase character.
+	headerName++;
+	while (headerName[0] >= 'a' && headerName[0] <= 'z') {
+		headerName++;
+	}
+	return headerName;
+}
+
+static int getSetHeaderIndex(
+	const char **headerNames,
+	const char *headerName,
+	int setHeaderCount)
+{
+	int i;
+	for (i = 0; i < setHeaderCount; i++) {
+		if (strcmp(headerNames[i], headerName) == 0) {
+			return i;
+		}
+	}
+	return -1;
+}
+
+static void initSetHeaders()
+{
+	vmodfod_setHeader *setHeader;
+	int i, setHeaderCount = 0;
+	const char *propertyName, *headerName;
+	DataSetHash *dataSet = DataSetHashGet(global.manager);
+
+	// Allocate more than we need here as it'll be freed by the end of the
+	// function anyway.
+	const char **headerNames = (const char **)malloc(sizeof(const char*) * dataSet->b.b.available->count);
+	if (headerNames == NULL) {
+		fprintf(stderr,
+			"vmod_fiftyonedegrees: Insufficient memory allocated.\n");
+		abort();
+	}
+	int *propertyCounts = (int*)malloc(sizeof(int) * dataSet->b.b.available->count);
+	if (propertyCounts == NULL) {
+		fprintf(stderr,
+			"vmod_fiftyonedegrees: Insufficient memory allocated.\n");
+		abort();
+	}
+
+	// Count the set header properties.
+	for (i = 0; i < dataSet->b.b.available->count; i++) {
+		propertyName = STRING(dataSet->b.b.available->items[i].name.data.ptr);
+		if(strncmp(
+			propertyName,
+			"SetHeader", strlen("SetHeader")) == 0) {
+				headerName = skipComponentName(propertyName + strlen("SetHeader"));
+				if (getSetHeaderIndex(headerNames, headerName, setHeaderCount) < 0) {
+					headerNames[setHeaderCount] = headerName;
+					propertyCounts[setHeaderCount] = 0;
+					setHeaderCount++;
+				}
+				propertyCounts[getSetHeaderIndex(headerNames, headerName, setHeaderCount)]++;
+			}
+	}
+
+	// Allocate some space.
+	global.setHeaders = (vmodfod_setHeader*)malloc(sizeof(vmodfod_setHeader) * setHeaderCount);
+	if (global.setHeaders == NULL) {
+		fprintf(stderr,
+			"vmod_fiftyonedegrees: Insufficient memory allocated.\n");
+		abort();
+	}
+
+	global.setHeadersCount = setHeaderCount;
+
+	// Set the header names.
+	for (i = 0; i < setHeaderCount; i++) {
+		// This doesn't need to be allocated in separate memory
+		// as it won't be freed from the available properties.
+		global.setHeaders[i].name = headerNames[i];
+		// Set this to zero so we know where we are while filling.
+		global.setHeaders[i].propertyCount = 0;
+		global.setHeaders[i].propertyIndexes = (int*)malloc(sizeof(int) *  propertyCounts[i]);
+		if (global.setHeaders[i].propertyIndexes == NULL) {
+			fprintf(stderr,
+				"vmod_fiftyonedegrees: Insufficient memory allocated.\n");
+			abort();
+		}
+	}
+
+	// Fill the properties.
+	for (i = 0; i < dataSet->b.b.available->count; i++) {
+		propertyName = STRING(dataSet->b.b.available->items[i].name.data.ptr);
+		if(strncmp(
+			propertyName,
+			"SetHeader", strlen("SetHeader")) == 0) {
+				headerName = skipComponentName(propertyName + strlen("SetHeader"));
+				setHeader = &global.setHeaders[getSetHeaderIndex(headerNames, headerName, setHeaderCount)];
+				setHeader->propertyIndexes[setHeader->propertyCount] = i;
+				setHeader->propertyCount++;
+			}
+	}
+	free(headerNames);
+	free(propertyCounts);
+	DataSetHashRelease(dataSet);
+}
+
 /**
  * VMOD Function
  * Start the 51Degrees module using the data file provided.
@@ -481,6 +591,7 @@ static void initConfig()
  */
 void vmod_start(const struct vrt_ctx *ctx, VCL_STRING filePath)
 {
+	int i;
 	EXCEPTION_CREATE;
 	PropertiesRequired properties = PropertiesDefault;
 	properties.string = global.requiredProperties;
@@ -502,6 +613,8 @@ void vmod_start(const struct vrt_ctx *ctx, VCL_STRING filePath)
 		// throw the correct error message and abort
 		loadFileErrorAbort(filePath);
 	}
+
+	initSetHeaders();
 }
 
 /**
@@ -630,13 +743,15 @@ static const char *getRequiredPropertyName(
  * @param requiredPropertyIndex the index of the required property
  * @param p buffer which will hold the value
  * @param u the size of the buffer
+ * @param logMissing true if missing values should be logged
  * @return the number of characters added, excluding the null terminator
  */
 static unsigned writeValue(
 	ResultsHash *results,
 	int requiredPropertyIndex,
 	char *p,
-	unsigned u) {
+	unsigned u,
+	bool logMissing) {
 	size_t charactersAdded = 0;
 	bool hasValues = false;
 
@@ -661,21 +776,23 @@ static unsigned writeValue(
 		}
 		else
 		{
-			// Get the reason message for property having no values
-			const char *reasonMessage = fiftyoneDegreesResultsHashGetNoValueReasonMessage(
-					fiftyoneDegreesResultsHashGetNoValueReason(results, 
-						requiredPropertyIndex,
-						exception));
-			// Check exception and set message appropriately.
-			if (EXCEPTION_FAILED)
-				reasonMessage = "Failed to obtain the reason";
+			if (logMissing == true) {
+				// Get the reason message for property having no values
+				const char *reasonMessage = fiftyoneDegreesResultsHashGetNoValueReasonMessage(
+						fiftyoneDegreesResultsHashGetNoValueReason(results, 
+							requiredPropertyIndex,
+							exception));
+				// Check exception and set message appropriately.
+				if (EXCEPTION_FAILED)
+					reasonMessage = "Failed to obtain the reason";
 
-			// Print a message to indicate that property has no values.
-			fprintf(stderr,
-				VMODFOD_PROP_NO_VALUES_MSG_FORMAT,
-				getRequiredPropertyName(results, requiredPropertyIndex),
-				reasonMessage);
-			
+				// Print a message to indicate that property has no values.
+				fprintf(stderr,
+					VMODFOD_PROP_NO_VALUES_MSG_FORMAT,
+					getRequiredPropertyName(results, requiredPropertyIndex),
+					reasonMessage);
+			}
+
 			// Print a null terminator to indicate that the value is empty
 			snprintf(p, u, "%c", '\0');
 		}
@@ -782,7 +899,8 @@ unsigned getValue(
 					results,
 					i,
 				    p,
-					u);
+					u,
+					true);
 				// Found the property, so stop looking.
 				found = true;
 				break;
@@ -955,18 +1073,19 @@ static const char *getHeaderName(
 }
 
 /**
- * Get the value of the header for the request context.
- * @param ctx the context
+ * Get the value of the header for the request or response context.
+ * @param reqOrResp the request or response from the context (e.g.
+ * ctx->http_req)
  * @param headerName the name of the header to get the value for
  * @return the value of the header
  */
-static char *searchHeaders(const struct vrt_ctx *ctx, const char *headerName)
+static char *searchHeaders(const struct http *reqOrResp, const char *headerName)
 {
 	char *currentHeader;
 	int i;
-	for (i = 0; i < ctx->http_req->nhd; i++)
+	for (i = 0; i < reqOrResp->nhd; i++)
 	{
-		currentHeader = (char*)ctx->http_req->hd[i].b;
+		currentHeader = (char*)reqOrResp->hd[i].b;
 		if (currentHeader != NULL
 			&& StringCompareLength(currentHeader, headerName, strlen(headerName)) == 0)
 		{
@@ -998,7 +1117,7 @@ static void setImportantHeaders(
 		headerName = getHeaderName(headerIndex);
 		// Look for the current header in the request.
 		headerValue = searchHeaders(
-			ctx,
+			ctx->http_req,
 			headerName);
 		if (headerValue) {
 			// The request contains the header, so add it to the important
@@ -1136,6 +1255,238 @@ VCL_STRING vmod_match_all(
 	}
 
 	// Update work space with what has been used.
+	WS_Release(ctx->ws, v);
+	return (returnString);
+}
+
+/**
+ * Write the values for all the set header properties to the workspace memory.
+ * @param p pointer to the point in workspace memory to print the string
+ * @param u the length of the available memory to write to
+ * @param results the matched results to get the values from
+ * @param header the set header to get property values for
+ * @return the number of bytes written
+ */
+static unsigned printSetHeaderToWorkspace(
+	char *p,
+	unsigned u,
+	ResultsHash *result,
+	vmodfod_setHeader *header)
+{
+	int i;
+	unsigned v = 0;
+	unsigned lastValue;
+	bool written = false;
+	v += snprintf(p + v, u, "%s:", header->name);
+	if (v > u) {
+		// Break now as we will only be printing to another workspace.
+		return v;
+	}
+
+	for (i = 0; i < header->propertyCount; i++)
+	{
+		if (written == true) {
+			v += snprintf(p + v, u, ",");
+			if (v > u) {
+				// Break now as we will only be printing to another workspace.
+				return v;
+			}
+		}
+		lastValue = writeValue(result, header->propertyIndexes[i], p + v, u, false);
+		if (strcmp(p+v, "Unknown") == 0) {
+			written = false;
+			p[v] = 0;
+		}
+		else {
+			written = lastValue > 0;
+			v += lastValue;
+		}
+		
+		if (v > u) {
+			// Break now as we will only be printing to another workspace.
+			return v;
+		}
+	}
+
+	return v;
+}
+
+/**
+ * VMOD Function
+ * Set the response headers which are supported by the requesting browser. For example,
+ * client-hint headers on newer versions of Chrome.
+ * @param ctx the context
+ */
+void vmod_set_resp_headers(const struct vrt_ctx *ctx)
+{
+	int i;
+	vmodfod_setHeader *setHeader;
+	char *currentHeaderString,
+		*endOfCurrentHeader,
+		*existingValue,
+		*existingHdr;
+
+	// The pointer in workspace memory to print to.
+	char *p;
+	// The length of memory reserved, and the length that has been
+	// printed respectively.
+	unsigned u, v = 0;
+
+	// Reserve some workspace.
+	u = WS_Reserve(ctx->ws, 0);
+	// Get pointer to the front of the workspace.
+	p = ctx->ws->f;
+
+
+	// Create exception
+	EXCEPTION_CREATE;
+
+	// Get a results instance to work on.
+	ResultsHash *results = OBTAIN_RESULTS_FROM_AVAILABLE_HEADERS(ctx, exception);
+	
+	// Check exception and return
+	if (EXCEPTION_FAILED) {
+		logExceptionMessage(exception);
+		ResultsHashFree(results);
+		WS_Release(ctx->ws, 0);
+		return;
+	}
+	
+	for (i = 0; i < global.setHeadersCount; i++) {
+		setHeader = &global.setHeaders[i];
+		// Write the header to the workspace memory.
+		currentHeaderString = p + v;
+		v += printSetHeaderToWorkspace(
+				p + v,
+				u,
+				results,
+				setHeader);
+		endOfCurrentHeader = p + v;
+		if (v > u) {
+			// No space, reset and leave.
+			ResultsHashFree(results);
+			WS_Release(ctx->ws, 0);
+			return;
+		}
+		if (v > strlen(setHeader->name) + 1) {
+			// If there are values for the header (i.e. more than just 
+			// "[headername]:" was written), then write to the response header
+			// collection.
+			existingValue = searchHeaders(ctx->http_resp, setHeader->name);
+			if (existingValue != NULL) {
+				// Append the existing value to the end of the header.
+				v += snprintf(endOfCurrentHeader, u, ", %s", existingValue);
+				if (v > u) {
+					// No space, reset and leave.
+					ResultsHashFree(results);
+					WS_Release(ctx->ws, 0);
+					return;
+				}
+				// Construct the existing header name prefixed with
+				// the length.
+				existingHdr = p + v;
+				v += snprintf(existingHdr, u, "0%s:", setHeader->name);
+				if (v > u) {
+					// No space, reset and leave.
+					ResultsHashFree(results);
+					WS_Release(ctx->ws, 0);
+					return;
+				}
+				existingHdr[0] = strlen(existingHdr + 1);
+				// Remove the existing header.
+				http_Unset(ctx->http_resp, existingHdr);
+			}
+			http_SetHeader(ctx->http_resp, currentHeaderString);
+		}
+	}
+	ResultsHashFree(results);
+	WS_Release(ctx->ws, v);
+}
+
+/**
+ * VMOD Function
+ * Gets a list of evidence from the request which will be used by the
+ * match_all function, formatted as a JSON string
+ * @param ctx the context to get the evidence from
+ * @return the values of the evidence used by the match_all method
+ */
+VCL_STRING vmod_evidence_used(
+	const struct vrt_ctx *ctx)
+{
+	uint16_t i;
+	// The pointer in workspace memory to print to.
+	char *p;
+
+	char *returnString;
+	// The length of memory reserved, and the length that has been
+	// printed respectively.
+	unsigned u, v = 0;
+
+	// Reserve some workspace.
+	u = WS_Reserve(ctx->ws, 0);
+	// Get pointer to the front of the workspace.
+	p = ctx->ws->f;
+
+	returnString = p;
+
+	int headerIndex;
+	char *headerValue;
+	const char *headerName;
+
+	v += snprintf(p + v, u, "{");
+	if (v > u) {
+		// No space, reset and leave.
+		WS_Release(ctx->ws, 0);
+		return (NULL);
+	}
+
+
+	// Loop over all important headers.
+	for (headerIndex = 0;
+		 headerIndex < getHeaderCount(global.manager);
+		 headerIndex++)
+	{
+		// Get the header name at the current index
+		headerName = getHeaderName(headerIndex);
+		// Look for the current header in the request.
+		headerValue = searchHeaders(
+			ctx->http_req,
+			headerName);
+		if (headerValue) {
+			// The request contains the header, so add it to the 
+			// return string.
+			if (p + v > returnString + 1) {
+				v += snprintf(p + v, u, ",");
+				if (v > u) {
+					// No space, reset and leave.
+					WS_Release(ctx->ws, 0);
+					return (NULL);
+				}
+			}
+			v += snprintf(p + v, u, "'%s':'%s'", headerName, headerValue);
+			if (v > u) {
+				// No space, reset and leave.
+				WS_Release(ctx->ws, 0);
+				return (NULL);
+			}
+		}
+	}
+	v += snprintf(p + v, u, "}");
+	if (v > u) {
+		// No space, reset and leave.
+		WS_Release(ctx->ws, 0);
+		return (NULL);
+	}
+
+	// Skip over the null terminator
+	v++;
+
+	if (v > u) {
+		// No space, reset and leave.
+		WS_Release(ctx->ws, 0);
+		return (NULL);
+	}
+
 	WS_Release(ctx->ws, v);
 	return (returnString);
 }

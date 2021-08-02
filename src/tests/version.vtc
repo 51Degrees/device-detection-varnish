@@ -35,7 +35,7 @@ varnish v1 -vcl+backend {
 		set resp.http.name = fiftyonedegrees.get_dataset_name();
 		set resp.http.version = fiftyonedegrees.get_dataset_format();
 		set resp.http.date = fiftyonedegrees.get_dataset_published_date();
-		if (resp.http.name ~ "Lite"
+		if ((resp.http.name ~ "Lite" || resp.http.name ~ "Enterprise" || resp.http.name ~ "TAC")
 			&& resp.http.version ~ "HashV41"
 			&& resp.http.date ~ "(\d)+\-(\d)+\-(\d)+") {
 			set resp.http.pass = "pass";
