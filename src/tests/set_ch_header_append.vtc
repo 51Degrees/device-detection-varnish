@@ -21,7 +21,6 @@
 #
 
 varnishtest "Test fiftyonedegrees vmod"
-feature cmd {echo "${vmod_fod_datafile}" | grep -q "Enterprise"}
 
 server s1 {
        rxreq
@@ -44,13 +43,9 @@ client c1 {
 	txreq -url "/" -hdr "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.114 Safari/537.36"
 	rxresp
 	expect resp.http.accept-ch ~ "existing"
-	expect resp.http.accept-ch ~ "SEC-CH-UA"
-	expect resp.http.accept-ch ~ "SEC-CH-UA-Full-Version"
-	expect resp.http.accept-ch ~ "SEC-CH-UA-Platform"
-	expect resp.http.accept-ch ~ "SEC-CH-UA-Platform-Version"
-	expect resp.http.accept-ch ~ "SEC-CH-UA-Model"
-	expect resp.http.accept-ch ~ "SEC-CH-UA-Mobile"
-	expect resp.http.accept-ch ~ "SEC-CH-UA-Arch"
+	expect resp.http.accept-ch ~ "Sec-CH-UA"
+	expect resp.http.accept-ch ~ "Sec-CH-UA-Platform"
+	expect resp.http.accept-ch ~ "Sec-CH-UA-Model"
 }
 
 client c1 -run
