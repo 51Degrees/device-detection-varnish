@@ -67,11 +67,17 @@ $(document).ready(function(){initNavTree('hash_2config_8vcl-example.html','');})
 <p>This example shows how to configure the available settings for 51Degrees' on-premise device detection in Varnish. This example is available in full on <a href="https://github.com/51Degrees/device-detection-varnish/blob/master/examples/hash/config.vcl">GitHub</a>.</p>
 <p>
 <p>
-This example requires a local data file. Free data files can be acquired by
-pulling the submodules under this repository or from the
-<a href="https://github.com/51Degrees/device-detection-data">device-detection-data</a>
+This example requires a local data file. The free 'Lite' data file can be acquired by
+pulling the git submodules under this repository (run `git submodule update --recursive`) 
+or from the <a href="https://github.com/51Degrees/device-detection-data">device-detection-data</a>
 GitHub repository.
-</p></p>
+</p>
+<p>
+The Lite data file is only used for illustration, and has limited accuracy and capabilities.
+Find out about the more capable data files that are available on our 
+<a href="https://51degrees.com/pricing">pricing page</a>
+</p>
+</p>
 <p>The path to the data need to be updated before running the example.</p>
 <p>In a Linux environment, the following commands: </p><div class="c-code__block c-code__block--outline"><div class="c-code__line">$ curl localhost:8080 -I -A <span class="c-code__stringliteral">&quot;Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.97 Safari/537.36&quot;</span></div></div><p> Expected output: </p><div class="c-code__block c-code__block--outline"><div class="c-code__line">HTTP/1.1 200 OK</div><div class="c-code__line">...</div><div class="c-code__line">X-Metadata: False:55:0:0:PREDICTIVE:__zilla/5.0 (Windows____10.0; Win6_______________________________________________Chrome/7_.0.3904__7 Safari/5_____:23:15364-38914-97847-18092</div></div><div class="c-code__block c-code__block--outline"><div class="c-code__line"></div><div class="c-code__line">vcl 4.0;</div><div class="c-code__line"></div><div class="c-code__line"><span class="c-code__keyword">import</span> fiftyonedegrees;</div><div class="c-code__line"></div><div class="c-code__line">backend <span class="c-code__keywordflow">default</span> {</div><div class="c-code__line">    .host = <span class="c-code__stringliteral">&quot;127.0.0.1&quot;</span>;</div><div class="c-code__line">    .port = <span class="c-code__stringliteral">&quot;80&quot;</span>;</div><div class="c-code__line">}</div><div class="c-code__line"></div><div class="c-code__line">sub vcl_deliver {</div><div class="c-code__line">    set resp.http.X-Metadata = fiftyonedegrees.match_all(<span class="c-code__stringliteral">&quot;IsMobile,Iterations,Drift,Difference,Method,UserAgents,MatchedNodes,DeviceId&quot;</span>);</div><div class="c-code__line">}</div><div class="c-code__line"></div><div class="c-code__line">sub vcl_init {</div><div class="c-code__line">    fiftyonedegrees.set_delimiter(<span class="c-code__stringliteral">&quot;:&quot;</span>);</div><div class="c-code__line">    fiftyonedegrees.set_drift(10);</div><div class="c-code__line">    fiftyonedegrees.set_difference(8);</div><div class="c-code__line">    fiftyonedegrees.set_max_concurrency(5);</div><div class="c-code__line">    fiftyonedegrees.set_allow_unmatched(<span class="c-code__stringliteral">&quot;YES&quot;</span>);</div><div class="c-code__line">    fiftyonedegrees.set_use_performance_graph(<span class="c-code__stringliteral">&quot;NO&quot;</span>);</div><div class="c-code__line">    fiftyonedegrees.set_use_predictive_graph(<span class="c-code__stringliteral">&quot;YES&quot;</span>);</div><div class="c-code__line">    fiftyonedegrees.start(<span class="c-code__stringliteral">&quot;/etc/varnish/51Degrees-LiteV4.1.hash&quot;</span>);</div><div class="c-code__line">}</div></div> </div><!-- primary -->
 </div><!-- inner-->
