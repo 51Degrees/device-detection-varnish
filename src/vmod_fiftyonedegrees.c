@@ -1067,7 +1067,7 @@ static int getHeaderCount()
 static const char *getHeaderName(
 	int headerIndex) {
 	DataSetBase *dataset = DataSetGet(global.manager);
-	const char *headerName = STRING(dataset->uniqueHeaders->items[headerIndex].name.data.ptr);
+	const char *headerName = dataset->uniqueHeaders->items[headerIndex].name;
 	DataSetRelease(dataset);
 	return headerName;
 }
