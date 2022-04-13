@@ -26,6 +26,7 @@ libvmod_fiftyonedegrees_la_SOURCES = \
 	device-detection-cxx/src/common-cxx/memory.c \
 	device-detection-cxx/src/common-cxx/overrides.c \
 	device-detection-cxx/src/common-cxx/pool.c \
+	device-detection-cxx/src/common-cxx/process.c \
 	device-detection-cxx/src/common-cxx/profile.c \
 	device-detection-cxx/src/common-cxx/properties.c \
 	device-detection-cxx/src/common-cxx/property.c \
