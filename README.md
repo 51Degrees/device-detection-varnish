@@ -41,7 +41,7 @@ first clone 51Degrees/device-detection-varnish repository with
 $ git clone --recursive https://github.com/51Degrees/device-detection-varnish.git
 ```
 
-This will also clone the dependent sub-module `device-detection-cxx` and any of its' recursive sub-modules. 
+This will also clone the dependent sub-module `cxx`, which holds the [51Degrees C and C++ code](https://github.com/51Degrees/51degrees-cxx), and any of its' recursive sub-modules.
 
 Move to the Varnish directory with
 

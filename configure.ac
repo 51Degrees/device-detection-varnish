@@ -81,7 +81,7 @@ AM_CONDITIONAL([FIFTYONEDEGREES_TEST], [test x$config = xtest])
 AC_ARG_WITH([datafile],
 			AS_HELP_STRING([--with-datafile=path/to/datafile], [The data file to be bundled into the build, this is used by the tests. By default, Lite data file will be used]),
     [datafile=$withval],
-    [datafile=src/device-detection-cxx/device-detection-data/51Degrees-LiteV4.1.hash])
+    [datafile=cxx/device-detection-data/51Degrees-LiteV4.1.hash])
 
 if test "x$datafile" = "x"; then
 	AC_MSG_NOTICE([Including default data file])
@@ -159,16 +159,16 @@ AC_CONFIG_FILES(
 
 missingFileMsg=["source file not found, this is likely because the git submodule has not ben pulled."]
 missingDataMsg=["data file '$datafile' not found."]
-AC_CHECK_FILES(src/device-detection-cxx/src/common-cxx/fiftyone.h,
+AC_CHECK_FILES(cxx/src/common/fiftyone.h,
     [],
     [AC_MSG_ERROR($missingFileMsg)])
-AC_CHECK_FILES(src/device-detection-cxx/src/dataset-dd.h,
+AC_CHECK_FILES(cxx/src/dd/dataset-dd.h,
     [],
     [AC_MSG_ERROR($missingFileMsg)])
-AC_CHECK_FILES(src/device-detection-cxx/src/config-dd.h,
+AC_CHECK_FILES(cxx/src/dd/config-dd.h,
     [],
     [AC_MSG_ERROR($missingFileMsg)])
-AC_CHECK_FILES(src/device-detection-cxx/src/results-dd.h,
+AC_CHECK_FILES(cxx/src/dd/results-dd.h,
     [],
     [AC_MSG_ERROR($missingFileMsg)])
 AC_CHECK_FILES($datafile,

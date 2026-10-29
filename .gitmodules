@@ -1,6 +1,6 @@
-[submodule "src/device-detection-cxx"]
-	path = src/device-detection-cxx
-	url = ../device-detection-cxx
+[submodule "cxx"]
+	path = cxx
+	url = ../51degrees-cxx
 [submodule "ci/common-ci"]
 	path = ci/common-ci
 url=../common-ci

@@ -121,7 +121,7 @@ static unsigned getString(const int32_t offset, char *buffer, unsigned bufferSiz
 
 	DataSetHash *dataset;
 	Item item;
-	String *itemData;
+	const String *itemData;
 
 	// Reset the data structure in the item
 	DataReset(&item.data);
@@ -1009,7 +1009,7 @@ VCL_STRING vmod_match_single(
 	returnString = p + v;
 
 	// Get a results instance to work on.
-	ResultsHash *results = ResultsHashCreate(global.manager, 1, 0);
+	ResultsHash *results = ResultsHashCreate(global.manager, 0);
 
 	EXCEPTION_CREATE;
 	// Carries out a match for the input User-Agent.
@@ -1145,7 +1145,7 @@ ResultsHash *obtainResultsFromAvailableHeaders(
 	int noOfHeaders = getHeaderCount();
 
 	// Create a results instance to work on
-	ResultsHash *results = ResultsHashCreate(global.manager, noOfHeaders, noOfHeaders);
+	ResultsHash *results = ResultsHashCreate(global.manager, noOfHeaders);
 
 	// Create evidence to hold important headers
 	EvidenceKeyValuePairArray *evidence = EvidenceCreate(noOfHeaders);
