@@ -738,13 +738,15 @@ static const char *getRequiredPropertyName(
 }
 
 /**
- * Method used to obtain the required property value by using its' index
+ * Method used to obtain the required property value by using its' index.
+ * The buffer is always left null terminated if it has any space.
  * @param results the match results
  * @param requiredPropertyIndex the index of the required property
  * @param p buffer which will hold the value
  * @param u the size of the buffer
  * @param logMissing true if missing values should be logged
- * @return the number of characters added, excluding the null terminator
+ * @return the number of characters written, excluding the null terminator,
+ * or u if the value does not fit in the buffer
  */
 static unsigned writeValue(
 	ResultsHash *results,
@@ -752,8 +754,20 @@ static unsigned writeValue(
 	char *p,
 	unsigned u,
 	bool logMissing) {
-	size_t charactersAdded = 0;
+	size_t count;
+	const char *end;
+	unsigned length = 0;
 	bool hasValues = false;
+
+	if (u == 0) {
+		// Not even a null terminator fits.
+		return u;
+	}
+	// The value is empty unless values are written below. The last byte is
+	// cleared too, so the string is terminated even when the values fill all
+	// the bytes before it and no terminator is written after them.
+	p[0] = '\0';
+	p[u - 1] = '\0';
 
 	EXCEPTION_CREATE;
 	// Get property hasValues status
@@ -762,7 +776,7 @@ static unsigned writeValue(
 		// Check if property has values
 		if (hasValues) {
 			// Print value to buffer
-			charactersAdded = ResultsHashGetValuesStringByRequiredPropertyIndex(
+			count = ResultsHashGetValuesStringByRequiredPropertyIndex(
 				results,
 				requiredPropertyIndex,
 				p,
@@ -771,7 +785,18 @@ static unsigned writeValue(
 				exception);
 			if (EXCEPTION_FAILED) {
 				logExceptionMessage(exception);
-				charactersAdded = 0;
+				p[0] = '\0';
+			}
+			else {
+				// The count may or may not include the null terminator, so
+				// measure the string written instead. A count of more than
+				// one past that length means the value was cut short.
+				end = memchr(p, '\0', u);
+				if (end == NULL || count > (size_t)(end - p) + 1) {
+					p[u - 1] = '\0';
+					return u;
+				}
+				length = (unsigned)(end - p);
 			}
 		}
 		else
@@ -792,9 +817,6 @@ static unsigned writeValue(
 					getRequiredPropertyName(results, requiredPropertyIndex),
 					reasonMessage);
 			}
-
-			// Print a null terminator to indicate that the value is empty
-			snprintf(p, u, "%c", '\0');
 		}
 	}
 	else
@@ -802,7 +824,7 @@ static unsigned writeValue(
 		logExceptionMessage(exception);
 	}
 
-	return charactersAdded;
+	return length;
 }
 
 /**
@@ -811,7 +833,8 @@ static unsigned writeValue(
  * @param requiredPropertyName name of the required property
  * @param p pointer to the point in workspace memory to print the values
  * @param u the length of the available memory to write to
- * @return the number of bytes written
+ * @return the number of characters written, excluding the null terminator.
+ * A result of u or more means the value does not fit.
  */
 unsigned getValue(
 	ResultsHash *results,
@@ -920,7 +943,8 @@ unsigned getValue(
  * @param results the matched results to get the values from
  * @param propertiesArray the array of property names to write the values of
  * @param propertiesCount the number of properties in the array
- * @return the number of bytes written
+ * @return the number of characters written, excluding the null terminator,
+ * or u if the values do not fit
  */
 static unsigned printValuesToWorkspace(
 	char *p,
@@ -931,19 +955,24 @@ static unsigned printValuesToWorkspace(
 {
 	int i;
 	unsigned v = 0;
+	if (u == 0) {
+		return u;
+	}
+	// The string is empty if there are no properties.
+	p[0] = '\0';
 	for (i = 0; i < propertiesCount; i++)
 	{
 		if (i != 0) {
-			v += snprintf(p + v, u, "%s", global.propertyDelimiter);
-			if (v > u) {
-				// Break now as we will only be printing to another workspace.
-				return v;
+			v += snprintf(p + v, u - v, "%s", global.propertyDelimiter);
+			if (v >= u) {
+				// No space left for the rest of the values.
+				return u;
 			}
 		}
-		v += getValue(results, propertiesArray[i], p + v, u);
-		if (v > u) {
-			// Break now as we will only be printing to another workspace.
-			return v;
+		v += getValue(results, propertiesArray[i], p + v, u - v);
+		if (v >= u) {
+			// No space left for the rest of the values.
+			return u;
 		}
 	}
 
@@ -997,9 +1026,11 @@ VCL_STRING vmod_match_single(
 	// Get the number of properties in the properties string.
 	propertiesCount = getSeparatorCount(propertiesString);
 	// Create a properties array by using pionters to the correct point in the
-	// properties string.
-	propertiesArray = (char **)p + v;
-	v += sizeof(char **) * propertiesCount;
+	// properties string. The array follows the string, aligned for a pointer
+	// as the workspace is.
+	v = PRNDUP(v);
+	propertiesArray = (char **)(p + v);
+	v += sizeof(char *) * propertiesCount;
 	if (v > u) {
 		WS_Release(ctx->ws, 0);
 		return (NULL);
@@ -1028,7 +1059,7 @@ VCL_STRING vmod_match_single(
 
 	v += printValuesToWorkspace(
 		p + v,
-		u,
+		u - v,
 		results,
 		propertiesArray,
 		propertiesCount);
@@ -1222,9 +1253,11 @@ VCL_STRING vmod_match_all(
 	// Get the number of properties in the properties string.
 	propertiesCount = getSeparatorCount(propertiesString);
 	// Create a properties array by using pointers to the correct point in the
-	// properties string.
-	propertiesArray = (char **)p + v;
-	v += sizeof(char **) * propertiesCount;
+	// properties string. The array follows the string, aligned for a pointer
+	// as the workspace is.
+	v = PRNDUP(v);
+	propertiesArray = (char **)(p + v);
+	v += sizeof(char *) * propertiesCount;
 	if (v > u) {
 		ResultsHashFree(results);
 		WS_Release(ctx->ws, 0);
@@ -1237,7 +1270,7 @@ VCL_STRING vmod_match_all(
 	// Print the values to the workspace memory that has been reserved.
 	v += printValuesToWorkspace(
 		p + v,
-		u,
+		u - v,
 		results,
 		propertiesArray,
 		propertiesCount);
@@ -1265,7 +1298,8 @@ VCL_STRING vmod_match_all(
  * @param u the length of the available memory to write to
  * @param results the matched results to get the values from
  * @param header the set header to get property values for
- * @return the number of bytes written
+ * @return the number of characters written, excluding the null terminator,
+ * or u if the header does not fit
  */
 static unsigned printSetHeaderToWorkspace(
 	char *p,
@@ -1277,22 +1311,31 @@ static unsigned printSetHeaderToWorkspace(
 	unsigned v = 0;
 	unsigned lastValue;
 	bool written = false;
-	v += snprintf(p + v, u, "%s:", header->name);
-	if (v > u) {
-		// Break now as we will only be printing to another workspace.
-		return v;
+	v += snprintf(p + v, u - v, "%s:", header->name);
+	if (v >= u) {
+		// No space left for the header.
+		return u;
 	}
 
 	for (i = 0; i < header->propertyCount; i++)
 	{
 		if (written == true) {
-			v += snprintf(p + v, u, ",");
-			if (v > u) {
-				// Break now as we will only be printing to another workspace.
-				return v;
+			v += snprintf(p + v, u - v, ",");
+			if (v >= u) {
+				// No space left for the rest of the header.
+				return u;
 			}
 		}
-		lastValue = writeValue(result, header->propertyIndexes[i], p + v, u, false);
+		lastValue = writeValue(
+			result,
+			header->propertyIndexes[i],
+			p + v,
+			u - v,
+			false);
+		if (lastValue >= u - v) {
+			// No space left for the rest of the header.
+			return u;
+		}
 		if (strcmp(p+v, "Unknown") == 0) {
 			written = false;
 			p[v] = 0;
@@ -1300,11 +1343,6 @@ static unsigned printSetHeaderToWorkspace(
 		else {
 			written = lastValue > 0;
 			v += lastValue;
-		}
-		
-		if (v > u) {
-			// Break now as we will only be printing to another workspace.
-			return v;
 		}
 	}
 
@@ -1322,9 +1360,10 @@ void vmod_set_resp_headers(const struct vrt_ctx *ctx)
 	int i;
 	vmodfod_setHeader *setHeader;
 	char *currentHeaderString,
-		*endOfCurrentHeader,
 		*existingValue,
 		*existingHdr;
+	// The length of the current header string.
+	unsigned headerLength;
 
 	// The pointer in workspace memory to print to.
 	char *p;
@@ -1356,42 +1395,49 @@ void vmod_set_resp_headers(const struct vrt_ctx *ctx)
 		setHeader = &global.setHeaders[i];
 		// Write the header to the workspace memory.
 		currentHeaderString = p + v;
-		v += printSetHeaderToWorkspace(
+		headerLength = printSetHeaderToWorkspace(
 				p + v,
-				u,
+				u - v,
 				results,
 				setHeader);
-		endOfCurrentHeader = p + v;
-		if (v > u) {
+		v += headerLength;
+		if (v >= u) {
 			// No space, reset and leave.
 			ResultsHashFree(results);
 			WS_Release(ctx->ws, 0);
 			return;
 		}
-		if (v > strlen(setHeader->name) + 1) {
-			// If there are values for the header (i.e. more than just 
+		if (headerLength > strlen(setHeader->name) + 1) {
+			// If there are values for the header (i.e. more than just
 			// "[headername]:" was written), then write to the response header
 			// collection.
 			existingValue = searchHeaders(ctx->http_resp, setHeader->name);
 			if (existingValue != NULL) {
 				// Append the existing value to the end of the header.
-				v += snprintf(endOfCurrentHeader, u, ", %s", existingValue);
-				if (v > u) {
+				v += snprintf(p + v, u - v, ", %s", existingValue);
+				if (v >= u) {
 					// No space, reset and leave.
 					ResultsHashFree(results);
 					WS_Release(ctx->ws, 0);
 					return;
 				}
+			}
+			// Keep the null terminator, as Varnish holds a pointer to the
+			// header string rather than a copy.
+			v++;
+			if (existingValue != NULL) {
 				// Construct the existing header name prefixed with
 				// the length.
 				existingHdr = p + v;
-				v += snprintf(existingHdr, u, "0%s:", setHeader->name);
-				if (v > u) {
+				v += snprintf(existingHdr, u - v, "0%s:", setHeader->name);
+				if (v >= u) {
 					// No space, reset and leave.
 					ResultsHashFree(results);
 					WS_Release(ctx->ws, 0);
 					return;
 				}
+				// Skip over the null terminator.
+				v++;
 				existingHdr[0] = strlen(existingHdr + 1);
 				// Remove the existing header.
 				http_Unset(ctx->http_resp, existingHdr);
@@ -1433,8 +1479,8 @@ VCL_STRING vmod_evidence_used(
 	char *headerValue;
 	const char *headerName;
 
-	v += snprintf(p + v, u, "{");
-	if (v > u) {
+	v += snprintf(p + v, u - v, "{");
+	if (v >= u) {
 		// No space, reset and leave.
 		WS_Release(ctx->ws, 0);
 		return (NULL);
@@ -1456,23 +1502,28 @@ VCL_STRING vmod_evidence_used(
 			// The request contains the header, so add it to the 
 			// return string.
 			if (p + v > returnString + 1) {
-				v += snprintf(p + v, u, ",");
-				if (v > u) {
+				v += snprintf(p + v, u - v, ",");
+				if (v >= u) {
 					// No space, reset and leave.
 					WS_Release(ctx->ws, 0);
 					return (NULL);
 				}
 			}
-			v += snprintf(p + v, u, "'%s':'%s'", headerName, headerValue);
-			if (v > u) {
+			v += snprintf(
+				p + v,
+				u - v,
+				"'%s':'%s'",
+				headerName,
+				headerValue);
+			if (v >= u) {
 				// No space, reset and leave.
 				WS_Release(ctx->ws, 0);
 				return (NULL);
 			}
 		}
 	}
-	v += snprintf(p + v, u, "}");
-	if (v > u) {
+	v += snprintf(p + v, u - v, "}");
+	if (v >= u) {
 		// No space, reset and leave.
 		WS_Release(ctx->ws, 0);
 		return (NULL);

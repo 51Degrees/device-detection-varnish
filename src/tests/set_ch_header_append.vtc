@@ -32,6 +32,12 @@ varnish v1 -vcl+backend {
 	sub vcl_deliver {
 		set resp.http.Accept-CH = "existing";
 		fiftyonedegrees.set_resp_headers();
+		# The combined header must be one line that ends with the existing
+		# value.
+		if (resp.http.Accept-CH ~ "\n" ||
+			resp.http.Accept-CH !~ ", existing$") {
+			set resp.http.accept-ch-malformed = "true";
+		}
 	}
 	sub vcl_init {
 		fiftyonedegrees.start("${vmod_fod_datafile}");
@@ -46,6 +52,7 @@ client c1 {
 	expect resp.http.accept-ch ~ "Sec-CH-UA"
 	expect resp.http.accept-ch ~ "Sec-CH-UA-Platform"
 	expect resp.http.accept-ch ~ "Sec-CH-UA-Model"
+	expect resp.http.accept-ch-malformed == <undef>
 }
 
 client c1 -run
