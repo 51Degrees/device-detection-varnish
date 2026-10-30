@@ -1,0 +1,60 @@
+#
+# This Original Work is copyright of 51 Degrees Mobile Experts Limited.
+# Copyright 2020 51 Degrees Mobile Experts Limited, 5 Charlotte Close,
+# Caversham, Reading, Berkshire, United Kingdom RG4 7BY.
+#
+# This Original Work is licensed under the European Union Public Licence (EUPL) 
+# v.1.2 and is subject to its terms as set out below.
+#
+# If a copy of the EUPL was not distributed with this file, You can obtain
+# one at https://opensource.org/licenses/EUPL-1.2.
+#
+# The 'Compatible Licences' set out in the Appendix to the EUPL (as may be
+# amended by the European Commission) shall be deemed incompatible for
+# the purposes of the Work and the provisions of the compatibility
+# clause in Article 5 of the EUPL shall not apply.
+# 
+# If using the Work as, or as part of, a network application, by 
+# including the attribution notice(s) required under Article 5 of the EUPL
+# in the end user terms of the application under an appropriate heading, 
+# such notice(s) shall fulfill the requirements of that article.
+#
+
+varnishtest "A missing or malformed address gives N/A and the request carries on"
+
+server s1 -repeat 20 {
+	rxreq
+	txresp
+} -start
+
+varnish v1 -vcl+backend {
+	import fiftyonedegrees_ipi from "${vmod_topbuild}/src/ipi/.libs/libvmod_fiftyonedegrees_ipi.so";
+
+	sub vcl_init {
+		fiftyonedegrees_ipi.start("${vmod_ipi_datafile}");
+	}
+	sub vcl_deliver {
+		set resp.http.absent = fiftyonedegrees_ipi.match("AsnName,Asn", req.http.not-sent);
+		set resp.http.empty = fiftyonedegrees_ipi.match("AsnName", "");
+		set resp.http.malformed = fiftyonedegrees_ipi.match("AsnName", "not an address");
+		set resp.http.too-many = fiftyonedegrees_ipi.match("AsnName", "1.2.3.4.5");
+		set resp.http.list-first = fiftyonedegrees_ipi.match("AsnName", "212.58.224.22, 2.248.13.139");
+	}
+} -start
+
+logexpect l1 -v v1 -g raw -q "VCL_Error" {
+	expect * * VCL_Error "No IP address to look up"
+} -start
+
+client c1 {
+	txreq
+	rxresp
+	expect resp.status == 200
+	expect resp.http.absent == "N/A,N/A"
+	expect resp.http.empty == "N/A"
+	expect resp.http.malformed == "N/A"
+	expect resp.http.too-many == "N/A"
+	expect resp.http.list-first == {\"BBC\":1}
+} -run
+
+logexpect l1 -wait
