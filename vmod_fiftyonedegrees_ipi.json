@@ -1,0 +1,21 @@
+{
+    "name": "fiftyonedegrees_ipi",
+    "date": "2026-10-30",
+    "desc": "51Degrees IP Intelligence",
+    "license": "EUPL",
+    "status": "mature",
+    "maintainer": "support@51degrees.com",
+    "support": "51Degrees.mobi Limited",
+    "product": "https://github.com/51Degrees/51degrees-varnish",
+    "github": {
+        "user": "51Degrees.mobi Limited",
+        "project": "51degrees-varnish",
+        "vcc_path": "src/ipi/vmod_fiftyonedegrees_ipi.vcc",
+        "doc_path": "src/ipi/vmod_fiftyonedegrees_ipi.rst",
+        "branches": {
+            "6.0": "main",
+            "7.7": "main",
+            "8.0": "main"
+        }
+    }
+}

@@ -6,10 +6,10 @@
     "status": "mature",
     "maintainer": "support@51degrees.com",
     "support": "51Degrees.mobi Limited",
-    "product": "https://github.com/51Degrees/device-detection-varnish",
+    "product": "https://github.com/51Degrees/51degrees-varnish",
     "github": {
         "user": "51Degrees.mobi Limited",
-        "project": "device-detection-varnish",
+        "project": "51degrees-varnish",
         "vcc_path": "src/dd/vmod_fiftyonedegrees.vcc",
         "doc_path": "src/dd/vmod_fiftyonedegrees.rst",
         "branches": {

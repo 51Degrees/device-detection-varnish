@@ -3,7 +3,7 @@
 
 Shows how to look up IP Intelligence properties for an IP address.
 
-This example is available in full on [GitHub](https://github.com/51Degrees/device-detection-varnish/blob/main/examples/ipi/gettingStarted.vcl).
+This example is available in full on [GitHub](https://github.com/51Degrees/51degrees-varnish/blob/main/examples/ipi/gettingStarted.vcl).
 
 The example uses the ASN data file, which comes with the 51degrees-cxx submodule
 at `cxx/ip-intelligence-data/51Degrees-IPIV4AsnIpiV41.ipi`. It has the properties
@@ -60,8 +60,8 @@ Find out more
 The engine this example uses:
 https://github.com/51Degrees/51degrees-cxx
 The Varnish modules:
-https://github.com/51Degrees/device-detection-varnish
+https://github.com/51Degrees/51degrees-varnish
 
-IP Intelligence: https://51degrees.com/products/ip-intelligence?utm_source=github&utm_medium=example&utm_campaign=device-detection-varnish&utm_content=examples-ipi-gettingstarted-vcl&utm_term=ip-intelligence
-Data files and pricing: https://51degrees.com/pricing?utm_source=github&utm_medium=example&utm_campaign=device-detection-varnish&utm_content=examples-ipi-gettingstarted-vcl&utm_term=pricing
+IP Intelligence: https://51degrees.com/products/ip-intelligence?utm_source=github&utm_medium=example&utm_campaign=51degrees-varnish&utm_content=examples-ipi-gettingstarted-vcl&utm_term=ip-intelligence
+Data files and pricing: https://51degrees.com/pricing?utm_source=github&utm_medium=example&utm_campaign=51degrees-varnish&utm_content=examples-ipi-gettingstarted-vcl&utm_term=pricing
 */

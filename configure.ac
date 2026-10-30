@@ -1,5 +1,5 @@
 AC_PREREQ(2.59)
-AC_INIT([libvmod-fiftyonedegrees], [trunk])
+AC_INIT([51degrees-varnish], [trunk])
 AC_CONFIG_MACRO_DIR([m4])
 AM_CONFIG_HEADER(config.h)
 

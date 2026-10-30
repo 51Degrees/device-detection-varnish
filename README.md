@@ -1,8 +1,8 @@
-# 51Degrees Device Detection VMOD
+# 51Degrees Real-Time Data Varnish Modules
 
-![51Degrees](https://51degrees.com/img/logo.png?utm_source=github&utm_medium=readme&utm_campaign=device-detection-varnish&utm_content=readme.md&utm_term=51degrees-device-detection-vmod "Data rewards the curious") **Device Detection in C** Varnish module
+![51Degrees](https://51degrees.com/img/logo.png?utm_source=github&utm_medium=readme&utm_campaign=51degrees-varnish&utm_content=readme.md&utm_term=51degrees-real-time-data-varnish-modules "Data rewards the curious") **Device Detection and IP Intelligence in C** Varnish modules
 
-[Developer documentation](https://51degrees.com/documentation/_other_integrations__varnish.html?utm_source=github&utm_medium=readme&utm_campaign=device-detection-varnish&utm_content=readme.md&utm_term=51degrees-device-detection-vmod)
+[Developer documentation](https://51degrees.com/documentation/_other_integrations__varnish.html?utm_source=github&utm_medium=readme&utm_campaign=51degrees-varnish&utm_content=readme.md&utm_term=51degrees-real-time-data-varnish-modules)
 
 ## Introduction
 
@@ -35,10 +35,10 @@ $ sudo apt-get install gcc autoconf automake libvarnishapi-dev varnish
 
 To install the module into an existing Varnish deployment,
 
-first clone 51Degrees/device-detection-varnish repository with
+first clone 51Degrees/51degrees-varnish repository with
 
 ```
-$ git clone --recursive https://github.com/51Degrees/device-detection-varnish.git
+$ git clone --recursive https://github.com/51Degrees/51degrees-varnish.git
 ```
 
 This will also clone the dependent sub-module `cxx`, which holds the [51Degrees C and C++ code](https://github.com/51Degrees/51degrees-cxx), and any of its' recursive sub-modules.
@@ -46,7 +46,7 @@ This will also clone the dependent sub-module `cxx`, which holds the [51Degrees 
 Move to the Varnish directory with
 
 ```
-$ cd device-detection-varnish
+$ cd 51degrees-varnish
 ```
 
 and install the module with (**NOTE**: if Varnish source was installed using the package manager, its' files will be located under `/usr/include/varnish` directory rather than `/usr/local/include/varnish`. The environment variable `VARNISHSRC` will need to be set to point to this location for the installation to succeed).
@@ -186,7 +186,7 @@ giving three separate headers.
 
 ## Example
 
-Start Varnish using the example VCLs within the `device-detection-varnish/examples/hash` directory with (**NOTE**: The data file path used by the `start` API in the `vcl_init` block will need to be updated before proceed):
+Start Varnish using the example VCLs within the `51degrees-varnish/examples/hash` directory with (**NOTE**: The data file path used by the `start` API in the `vcl_init` block will need to be updated before proceed):
 
 ```
 $ varnishd -f /path/to/examples/hash/gettingStarted.vcl -a localhost:8080 -d
@@ -220,7 +220,7 @@ The module reads version 4.6 data files. A data file of another version is refus
 | Data file | Where to get it | Properties |
 | --- | --- | --- |
 | ASN | `cxx/ip-intelligence-data/51Degrees-IPIV4AsnIpiV41.ipi`, included with the `cxx` sub-module | `AsnName` and `Asn` |
-| Lite and Enterprise | See the [data file options](https://51degrees.com/pricing?utm_source=github&utm_medium=readme&utm_campaign=device-detection-varnish&utm_content=readme.md&utm_term=ip-intelligence-data-files) | Many more, such as `RegisteredName` and `RegisteredCountry` |
+| Lite and Enterprise | See the [data file options](https://51degrees.com/pricing?utm_source=github&utm_medium=readme&utm_campaign=51degrees-varnish&utm_content=readme.md&utm_term=ip-intelligence-data-files) | Many more, such as `RegisteredName` and `RegisteredCountry` |
 
 ### The VCL file
 
