@@ -1,0 +1,30 @@
+{
+  "name": "fiftyone.test.cdn",
+  "version": "1.0.0",
+  "description": "Test for the JavaScript example in 51degrees-varnish",
+  "main": "cdn.test.js",
+  "directories": {
+    "test": "./"
+  },
+  "scripts": {
+    "test": "jest --ci --reporters=default --reporters=jest-junit"
+  },
+  "jest-junit": {
+    "outputName": "cdn_test_results.xml"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/51Degrees/51degrees-varnish/tests/examples/jsExample"
+  },
+  "author": "51Degrees",
+  "dependencies": {
+    "jest": "^29.7.0",
+    "jest-junit": "^16.0.0",
+    "selenium-webdriver": "^4.20.0"
+  },
+  "license": "EUPL-1.2",
+  "files": [
+    "build",
+    "*.js"
+  ]
+}
