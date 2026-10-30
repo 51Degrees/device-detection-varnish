@@ -3,7 +3,7 @@
 
 @include{doc} example-getting-started-hash.txt
 
-This example is available in full on [GitHub](https://github.com/51Degrees/device-detection-varnish/blob/master/examples/hash/gettingStarted.vcl).
+This example is available in full on [GitHub](https://github.com/51Degrees/device-detection-varnish/blob/main/examples/hash/gettingStarted.vcl).
 
 @include{doc} example-require-datafile.txt
 

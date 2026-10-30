@@ -13,7 +13,7 @@
         "vcc_path": "src/vmod_fiftyonedegrees.vcc",
         "doc_path": "src/vmod_fiftyonedegrees.rst",
         "branches": {
-            "6.0": "master"
+            "6.0": "main"
         }
     }
 }

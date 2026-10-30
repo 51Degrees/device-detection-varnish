@@ -3,7 +3,7 @@
 
 @include{doc} example-client-hints-hash.txt
 
-This example is available in full on [GitHub](https://github.com/51Degrees/device-detection-varnish/blob/master/examples/hash/clientHints.vcl).
+This example is available in full on [GitHub](https://github.com/51Degrees/device-detection-varnish/blob/main/examples/hash/clientHints.vcl).
 
 @include{doc} example-require-datafile.txt 
 
