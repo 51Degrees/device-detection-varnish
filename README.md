@@ -67,6 +67,8 @@ Where `--with-config`  [optional] sets the version that will be built. `release`
 
 `--with-datafile-ipi` [optional] sets the IP Intelligence data file used by the unit tests.
 
+The data files used by the tests can also be set when they are run, with `make check 51DEGREES_DD_PATH=/path/to/file 51DEGREES_IPI_PATH=/path/to/file`.
+
 When varnish is installed in a non standard directory, please set the value of environment variable `VARNISHSRC` to point to where the varnish source resides before running the `configure` (e.g. ``export VARNISHSRC=/usr/include/varnish``).
 
 The location of where the module will be installed can also be customised by setting the environment variable `VMOD_DIR` before running the `configure`.
@@ -209,6 +211,95 @@ X-IsMobile: True
 ...
 ```
 
+## Device detection functions
+
+These are the functions of the `fiftyonedegrees` module which find a device. They all return a string, and the properties are a comma separated list.
+
+| Function | Evidence it uses |
+| --- | --- |
+| `match_all(properties)` | All the headers the data file uses, query arguments and cookies. A query argument with the name of a header takes the place of that header, and a cookie or query argument named after a property with the prefix `51D_`, such as `51D_ScreenPixelsWidth`, overrides that property. |
+| `match_single(userAgent, properties)` | The User-Agent given. |
+| `match_ua_client_hints(properties, userAgent)` | The `User-Agent` and `Sec-CH-UA-*` headers alone, along with query arguments and overrides. The optional second argument gives a User-Agent to use in place of the one in the request. |
+| `get_javascript_all(property)` | As `match_all`, returning the JavaScript in the property. |
+| `get_javascript_single(userAgent, property)` | As `match_single`, returning the JavaScript in the property. |
+
+### Required properties
+
+`set_properties` in `vcl_init` names the properties to load, and with no call every property in the data file is loaded. Naming only the ones needed makes each match faster and reduces memory use. Match metrics do not need to be named.
+
+### Match metrics
+
+Other than device properties, the metrics of a match can be requested in the same way. They are `Drift`, `Difference`, `Method`, `MatchedNodes`, `UserAgents`, `DeviceId` and `Iterations`.
+
+```
+set resp.http.x-metrics = fiftyonedegrees.match_all("Drift,Difference,Method,MatchedNodes,DeviceId,UserAgents");
+```
+
+### Output format
+
+The result has the values in the same order as the properties, separated by a comma, or by what `set_delimiter` sets. A property with several values has them separated by a pipe. A property which is not available gives `N/A`.
+
+```
+set req.http.x-device = fiftyonedegrees.match_all("HardwareName,BrowserName,PlatformName");
+```
+
+gives a header like `x-device: Desktop,Firefox,Ubuntu`.
+
+### Passing values to the backend
+
+A header set on `req` in `vcl_recv` goes to the backend along with the request, as the header from `match_all` above does. Set it on `resp` in `vcl_deliver` to send it to the client.
+
+### Serving the JavaScript
+
+Some evidence is only known to the browser, such as the width of the screen. The JavaScript properties hold a script which gets that evidence and sets a cookie, for `match_all` to read on the next request. Serve one from `vcl_synth`:
+
+```
+sub vcl_recv {
+	if (req.url == "/51D.js") {
+		return (synth(200));
+	}
+}
+
+sub vcl_synth {
+	if (req.url == "/51D.js") {
+		set resp.http.Content-Type = "application/x-javascript";
+		synthetic(fiftyonedegrees.get_javascript_all("ScreenPixelsWidthJavascript"));
+		return (deliver);
+	}
+}
+```
+
+If the property is not available, the result is a JavaScript comment, so a page loading it does not get a syntax error. The script is written to the workspace, so a script larger than the remaining workspace gives the comment too, along with a message in the log. In that case raise the `workspace_client` parameter.
+
+## Examples
+
+All the examples are in the `examples` folder. Device detection examples are in `hash`, IP Intelligence examples are in `ipi`, and examples using both are in `mixed`.
+
+| Example | What it shows |
+| --- | --- |
+| `hash/gettingStarted.vcl` | `match_single` |
+| `hash/matchAll.vcl` | `match_all` |
+| `hash/clientHints.vcl` | Client hints |
+| `hash/config.vcl` | Configuration, such as drift and difference |
+| `hash/metadata.vcl` | Information about the data file |
+| `hash/matchMetrics.vcl` | The metrics of a match |
+| `hash/matchQuery.vcl` | Evidence from the query string |
+| `hash/responseHeaders/responseHeader.vcl` | Asking a browser for client hints with `set_resp_headers` |
+| `hash/jsExample` | Serving the JavaScript and using what it sends back |
+| `ipi/gettingStarted.vcl` | IP Intelligence on its own |
+| `mixed/gettingStarted.vcl` | Both modules for the same request |
+| `curl` | Sending evidence with cURL, with a Docker image |
+
+`make check` runs each of them, apart from the browser side of `hash/jsExample`.
+
+## Tests
+
+| Command | What it does |
+| --- | --- |
+| `make check` | Runs the tests of both modules and each example. The `test` version is needed. |
+| `make mem-check` | Builds both modules with the address sanitizer, then runs the same tests. |
+| `tests/performance` | Measures what each lookup adds to a request. Run `cmake ..` and `cmake --build .` in a `build` folder there, then `ENGINE=ipi BUILD_PATH=/path/to/repository ./runPerf.sh` for IP Intelligence, or `EVIDENCE=/path/to/evidence.yml BUILD_PATH=/path/to/repository ./runPerf.sh` for device detection. It needs `cmake`, `libapr1-dev` and `libaprutil1-dev`, and writes `results.json`. |
+
 ## IP Intelligence
 
 The `fiftyonedegrees_ipi` module looks up an IP address and returns the properties of the network it belongs to. It is a separate module because IP Intelligence needs the common C code compiled differently from device detection, so one library cannot hold both. `make install` installs both modules, and each VCL imports the ones it uses.
@@ -259,7 +350,3 @@ Pass one address. Given a list such as the value of `X-Forwarded-For`, the modul
 Each value takes the form `"value":weight`, where the weight is a number between 0 and 1 showing the confidence in the value. A property with several values has them separated by a pipe. The double quotes are escaped with a backslash, so the string can be used as a header value, in the same way as the [Nginx module](https://github.com/51Degrees/device-detection-nginx). For example, `fiftyonedegrees_ipi.match("AsnName,Asn", "212.58.224.22")` returns `\"BBC\":1,\"AS2818\":1` with the ASN data file.
 
 `N/A` is returned in place of a value when the property was not loaded, the property has no value, or the address is missing or malformed. The reason is logged as a `VCL_Error` record, and the request carries on. If the values do not fit in the workspace, the result is not set.
-
-### Examples
-
-`examples/ipi/gettingStarted.vcl` uses the module on its own, and `examples/mixed/gettingStarted.vcl` uses it alongside device detection for the same request.
