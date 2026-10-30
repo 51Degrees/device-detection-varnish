@@ -1,0 +1,28 @@
+[
+  {
+    "Image": "ubuntu-24.04",
+    "Name": "ubuntu-24.04_Varnish6.0.6",
+    "VarnishVersion": "6.0.6"
+  },
+  {
+    "Image": "ubuntu-24.04",
+    "Name": "ubuntu-24.04_Varnish6.0.8",
+    "VarnishVersion": "6.0.8"
+  },
+  {
+    "Image": "ubuntu-24.04",
+    "Name": "ubuntu-24.04_Varnish6.0.17",
+    "VarnishVersion": "6.0.17",
+    "PackageRequirement": true
+  },
+  {
+    "Image": "ubuntu-24.04",
+    "Name": "ubuntu-24.04_Varnish7.7.3",
+    "VarnishVersion": "7.7.3"
+  },
+  {
+    "Image": "ubuntu-24.04",
+    "Name": "ubuntu-24.04_Varnish8.0.1",
+    "VarnishVersion": "8.0.1"
+  }
+]
