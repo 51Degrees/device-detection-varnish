@@ -1030,7 +1030,11 @@ VCL_STRING vmod_match_single(
 	ResultsHash *results = ResultsHashCreate(global.manager, 0);
 
 	EXCEPTION_CREATE;
-	// Carries out a match for the input User-Agent.
+	// Carries out a match for the input User-Agent. VCL gives no string for a
+	// header which is not in the request.
+	if (userAgent == NULL) {
+		userAgent = "";
+	}
 	ResultsHashFromUserAgent(
 		results,
 		userAgent,
@@ -1610,6 +1614,118 @@ VCL_STRING vmod_match_ua_client_hints(
 		a->valid_userAgent ? a->userAgent : NULL,
 		exception);
 	return printMatch(ctx, a->properties, results, exception);
+}
+
+/**
+ * What is returned in place of JavaScript which is not available, so that a page
+ * loading it does not get a syntax error.
+ */
+#define VMODFOD_JAVASCRIPT_NOT_AVAILABLE "/* 51Degrees Javascript not available. */"
+
+/**
+ * Write the value of a JavaScript property to the workspace, and free the
+ * results.
+ * @param ctx the context
+ * @param property the name of the property
+ * @param results the results of the match, or NULL if they could not be created
+ * @param exception the exception from the match
+ * @return the JavaScript, or VMODFOD_JAVASCRIPT_NOT_AVAILABLE if there is none or
+ * it does not fit
+ */
+static VCL_STRING printJavascript(
+	const struct vrt_ctx *ctx,
+	VCL_STRING property,
+	ResultsHash *results,
+	Exception *exception)
+{
+	// The pointer in workspace memory to print to.
+	char *p;
+	// The length of memory reserved, and the length that has been
+	// printed respectively.
+	unsigned u, v = 0;
+	int i;
+
+	if (results == NULL) {
+		fprintf(stderr, "vmod_fiftyonedegrees: Insufficient memory allocated.\n");
+		return (VMODFOD_JAVASCRIPT_NOT_AVAILABLE);
+	}
+	if (EXCEPTION_FAILED) {
+		logExceptionMessage(exception);
+		ResultsHashFree(results);
+		return (VMODFOD_JAVASCRIPT_NOT_AVAILABLE);
+	}
+
+	// Reserve some workspace.
+	u = vmodfodReserve(ctx->ws, &p);
+
+	if (property != NULL) {
+		for (i = 0; i < getRequiredPropertyCount(results); i++) {
+			if (StringCompare(getRequiredPropertyName(results, i), property) == 0) {
+				v = writeValue(results, i, p, u, true);
+				break;
+			}
+		}
+	}
+
+	ResultsHashFree(results);
+
+	if (v == 0 || v >= u) {
+		if (v >= u && u > 0) {
+			fprintf(stderr,
+				"vmod_fiftyonedegrees: The value of %s does not fit in the "
+				"workspace. Raise the workspace_client parameter.\n",
+				property);
+		}
+		WS_Release(ctx->ws, 0);
+		return (VMODFOD_JAVASCRIPT_NOT_AVAILABLE);
+	}
+
+	// Update work space with what has been used, including the null terminator.
+	WS_Release(ctx->ws, v + 1);
+	return (p);
+}
+
+/**
+ * VMOD Function
+ * Match the evidence in the HTTP request, and return the JavaScript in a
+ * property, for serving to a browser.
+ * @param ctx the context
+ * @param property the name of the JavaScript property
+ * @return the JavaScript, or a comment if it is not available
+ */
+VCL_STRING vmod_get_javascript_all(
+	const struct vrt_ctx *ctx,
+	VCL_STRING property)
+{
+	EXCEPTION_CREATE;
+	ResultsHash *results = OBTAIN_RESULTS_FROM_AVAILABLE_HEADERS(ctx, exception);
+	return printJavascript(ctx, property, results, exception);
+}
+
+/**
+ * VMOD Function
+ * Match a User-Agent, and return the JavaScript in a property, for serving to a
+ * browser.
+ * @param ctx the context
+ * @param userAgent the User-Agent string to match
+ * @param property the name of the JavaScript property
+ * @return the JavaScript, or a comment if it is not available
+ */
+VCL_STRING vmod_get_javascript_single(
+	const struct vrt_ctx *ctx,
+	VCL_STRING userAgent,
+	VCL_STRING property)
+{
+	ResultsHash *results = ResultsHashCreate(global.manager, 0);
+	EXCEPTION_CREATE;
+	if (results != NULL) {
+		ResultsHashFromUserAgent(
+			results,
+			userAgent == NULL ? "" : userAgent,
+			userAgent == NULL ? 0 : strlen(userAgent),
+			exception);
+	}
+	return printJavascript(ctx, property, results, exception);
 }
 
 /**
