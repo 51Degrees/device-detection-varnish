@@ -87,6 +87,20 @@ Example
 
 		set req.http.X-IsMobile = fiftyonedegrees.match_single(req.http.user-agent, "IsMobile");
 
+$Function STRING match_ua_client_hints(STRING properties, [STRING userAgent])
+
+Return value
+	STRING
+Description
+	Gets the values of the properties, as match_all does, from the
+	User-Agent and User-Agent client hint headers alone. The optional
+	second argument gives a User-Agent to use in place of the one in the
+	request.
+Example
+	::
+
+		set req.http.X-Model = fiftyonedegrees.match_ua_client_hints("HardwareModel");
+
 $Function STRING evidence_used()
 
 Return value

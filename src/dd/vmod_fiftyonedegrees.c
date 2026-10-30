@@ -1096,6 +1096,10 @@ static char *searchHeaders(const struct http *reqOrResp, const char *headerName)
 
 /** Start of the name of a cookie or query argument which overrides a property. */
 #define VMODFOD_OVERRIDE_PREFIX "51D_"
+/** The name of the User-Agent header. */
+#define VMODFOD_USER_AGENT "User-Agent"
+/** Start of the names of the User-Agent client hint headers. */
+#define VMODFOD_CLIENT_HINT_PREFIX "Sec-CH-UA"
 
 /**
  * Evidence from a request, with the strings made for it.
@@ -1299,17 +1303,37 @@ static void freeEvidence(vmodfod_evidence *evidence)
 }
 
 /**
+ * Check if a header is the User-Agent or a User-Agent client hint.
+ * @param headerName the name of the header
+ * @return true if it is one of those headers
+ */
+static bool isUserAgentOrClientHint(const char *headerName)
+{
+	return StringCompare(headerName, VMODFOD_USER_AGENT) == 0
+		|| StringCompareLength(
+			headerName,
+			VMODFOD_CLIENT_HINT_PREFIX,
+			sizeof(VMODFOD_CLIENT_HINT_PREFIX) - 1) == 0;
+}
+
+/**
  * Gather the evidence from the request. Every header the data set uses comes
  * from the header and from a query argument of the same name, and every
  * property which can be overridden comes from a cookie and a query argument.
  * @param ctx the context
  * @param dataSet the data set
+ * @param clientHintsOnly true to leave out headers other than the User-Agent
+ * and the User-Agent client hints
+ * @param userAgent the User-Agent to use in place of the one in the request, or
+ * NULL to use the request's
  * @param evidence set to the evidence, to free with freeEvidence
  * @return false if there was not enough memory
  */
 static bool createEvidence(
 	const struct vrt_ctx *ctx,
 	DataSetHash *dataSet,
+	bool clientHintsOnly,
+	const char *userAgent,
 	vmodfod_evidence *evidence)
 {
 	uint32_t i, headers, overrides = 0, capacity;
@@ -1342,6 +1366,18 @@ static bool createEvidence(
 
 	for (i = 0; i < headers; i++) {
 		headerName = dataSet->b.b.uniqueHeaders->items[i].name;
+		if (clientHintsOnly && !isUserAgentOrClientHint(headerName)) {
+			continue;
+		}
+		if (userAgent != NULL
+			&& StringCompare(headerName, VMODFOD_USER_AGENT) == 0) {
+			EvidenceAddString(
+				evidence->pairs,
+				FIFTYONE_DEGREES_EVIDENCE_HTTP_HEADER_STRING,
+				headerName,
+				userAgent);
+			continue;
+		}
 		headerValue = searchHeaders(ctx->http_req, headerName);
 		if (headerValue != NULL) {
 			EvidenceAddString(
@@ -1379,14 +1415,20 @@ static bool createEvidence(
 }
 
 /**
- * Obtain the results from the evidence in the request.
+ * Obtain the results from evidence in the request.
  * The results should be freed by ResultsHashFree to prevent memory leak
  * @param ctx the context
+ * @param clientHintsOnly true to leave out headers other than the User-Agent
+ * and the User-Agent client hints
+ * @param userAgent the User-Agent to use in place of the one in the request, or
+ * NULL to use the request's
  * @param exception the exception object
  * @return the results, or NULL if there was not enough memory
  */
-ResultsHash *obtainResultsFromAvailableHeaders(
+static ResultsHash *obtainResults(
 	const struct vrt_ctx *ctx,
+	bool clientHintsOnly,
+	const char *userAgent,
 	Exception *exception)
 {
 	vmodfod_evidence evidence;
@@ -1400,7 +1442,12 @@ ResultsHash *obtainResultsFromAvailableHeaders(
 	}
 
 	// The results hold a reference to the data set for as long as they exist.
-	if (!createEvidence(ctx, (DataSetHash *)results->b.b.dataSet, &evidence)) {
+	if (!createEvidence(
+		ctx,
+		(DataSetHash *)results->b.b.dataSet,
+		clientHintsOnly,
+		userAgent,
+		&evidence)) {
 		ResultsHashFree(results);
 		return NULL;
 	}
@@ -1415,17 +1462,33 @@ ResultsHash *obtainResultsFromAvailableHeaders(
 }
 
 /**
- * VMOD Function
- * Match the HTTP request headers, and return the values for the properties
- * requests for the matched device.
+ * Obtain the results from all the evidence in the request.
+ * The results should be freed by ResultsHashFree to prevent memory leak
+ * @param ctx the context
+ * @param exception the exception object
+ * @return the results, or NULL if there was not enough memory
+ */
+ResultsHash *obtainResultsFromAvailableHeaders(
+	const struct vrt_ctx *ctx,
+	Exception *exception)
+{
+	return obtainResults(ctx, false, NULL, exception);
+}
+
+/**
+ * Write the values of the requested properties to the workspace, and free the
+ * results.
  * @param ctx the context
  * @param propertyInputString the list of property names to return the values
- * @return the values of the requested properties for the device matched with
- * the request headers
+ * @param results the results of the match, or NULL if they could not be created
+ * @param exception the exception from the match
+ * @return the values, or NULL if there is no match or they do not fit
  */
-VCL_STRING vmod_match_all(
+static VCL_STRING printMatch(
 	const struct vrt_ctx *ctx,
-	VCL_STRING propertyInputString)
+	VCL_STRING propertyInputString,
+	ResultsHash *results,
+	Exception *exception)
 {
 	// The pointer in workspace memory to print to.
 	char *p;
@@ -1437,36 +1500,29 @@ VCL_STRING vmod_match_all(
 	int propertiesCount;
 	char **propertiesArray;
 
+	// Check for no memory, or an exception, and return
+	if (results == NULL) {
+		fprintf(stderr, "vmod_fiftyonedegrees: Insufficient memory allocated.\n");
+		return (NULL);
+	}
+	if (EXCEPTION_FAILED) {
+		logExceptionMessage(exception);
+		ResultsHashFree(results);
+		return (NULL);
+	}
+
 	// Reserve some workspace.
 	u = vmodfodReserve(ctx->ws, &p);
 
 	// Copy the properties string to the workspace memory.
 	v += snprintf(p, u, "%s", propertyInputString);
 	if (v > u) {
+		ResultsHashFree(results);
 		WS_Release(ctx->ws, 0);
 		return (NULL);
 	}
 	// Skip over the null terminator.
 	v++;
-
-	// Create exception
-	EXCEPTION_CREATE;
-
-	// Create a results instance to work on
-	ResultsHash *results = OBTAIN_RESULTS_FROM_AVAILABLE_HEADERS(ctx, exception);
-
-	// Check for no memory, or an exception, and return
-	if (results == NULL) {
-		fprintf(stderr, "vmod_fiftyonedegrees: Insufficient memory allocated.\n");
-		WS_Release(ctx->ws, 0);
-		return (NULL);
-	}
-	if (EXCEPTION_FAILED) {
-		logExceptionMessage(exception);
-		ResultsHashFree(results);
-		WS_Release(ctx->ws, 0);
-		return (NULL);
-	}
 
 	// This string is modifiable unlike propertyInputString, so getProperties
 	// can replace separators with null terminators.
@@ -1496,7 +1552,7 @@ VCL_STRING vmod_match_all(
 		results,
 		propertiesArray,
 		propertiesCount);
-	
+
 	// Skip over the null terminator.
 	v++;
 
@@ -1512,6 +1568,48 @@ VCL_STRING vmod_match_all(
 	// Update work space with what has been used.
 	WS_Release(ctx->ws, v);
 	return (returnString);
+}
+
+/**
+ * VMOD Function
+ * Match the evidence in the HTTP request, being the headers, query arguments
+ * and cookies, and return the values for the properties requested for the
+ * matched device.
+ * @param ctx the context
+ * @param propertyInputString the list of property names to return the values
+ * @return the values of the requested properties for the device matched with
+ * the request
+ */
+VCL_STRING vmod_match_all(
+	const struct vrt_ctx *ctx,
+	VCL_STRING propertyInputString)
+{
+	EXCEPTION_CREATE;
+	ResultsHash *results = OBTAIN_RESULTS_FROM_AVAILABLE_HEADERS(ctx, exception);
+	return printMatch(ctx, propertyInputString, results, exception);
+}
+
+/**
+ * VMOD Function
+ * Match the User-Agent and User-Agent client hints in the request, leaving out
+ * other headers, and return the values for the properties requested for the
+ * matched device.
+ * @param ctx the context
+ * @param a the arguments, with the list of property names and the optional
+ * User-Agent to use in place of the one in the request
+ * @return the values of the requested properties for the matched device
+ */
+VCL_STRING vmod_match_ua_client_hints(
+	const struct vrt_ctx *ctx,
+	struct VARGS(match_ua_client_hints) *a)
+{
+	EXCEPTION_CREATE;
+	ResultsHash *results = obtainResults(
+		ctx,
+		true,
+		a->valid_userAgent ? a->userAgent : NULL,
+		exception);
+	return printMatch(ctx, a->properties, results, exception);
 }
 
 /**
@@ -1711,7 +1809,7 @@ VCL_STRING vmod_evidence_used(
 	}
 
 	dataSet = DataSetHashGet(global.manager);
-	if (!createEvidence(ctx, dataSet, &evidence)) {
+	if (!createEvidence(ctx, dataSet, false, NULL, &evidence)) {
 		DataSetHashRelease(dataSet);
 		WS_Release(ctx->ws, 0);
 		return (NULL);
