@@ -140,9 +140,8 @@ VARNISH_VMODTOOL
 AC_PATH_PROG([VARNISHTEST], [varnishtest], [],
     [$VARNISHSRC/bin/varnishtest:$LIBVARNISHAPI_BINDIR:$LIBVARNISHAPI_SBINDIR:$PATH])
 
-# Get the version in integer form, and set the compile arguments.
-parsedvarnishversion=`chmod +x version.py && ./version.py $varnishversion`
-CFLAGS+=" -DFIFTYONEDEGREES_VARNISH_VERSION=$parsedvarnishversion -Wno-unused-but-set-variable -Wno-unused-function -Wno-format-security -Wno-uninitialized -I$VARNISHSRC/include -I$VARNISHSRC -I$VARNISHSRC/bin/varnishd"
+# Set the compile arguments.
+CFLAGS+=" -Wno-unused-but-set-variable -Wno-unused-function -Wno-format-security -Wno-uninitialized -I$VARNISHSRC/include -I$VARNISHSRC -I$VARNISHSRC/bin/varnishd"
 
 `cat src/vmod_fiftyonedegrees.vcc.template > src/vmod_fiftyonedegrees.vcc`
 if test "x$config" = "xtest"; then

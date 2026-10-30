@@ -20,7 +20,7 @@
 # such notice(s) shall fulfill the requirements of that article.
 #
 
-$Module fiftyonedegrees 4 51Degrees Device Detection VMOD
+$Module fiftyonedegrees 4 "51Degrees Device Detection VMOD"
 
 DESCRIPTION
 ===========

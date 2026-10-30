@@ -8,7 +8,7 @@
 
 The project contains source code for the Varnish integration of 51Degrees' on-premise Device Detection engine.
 
-The module is supported for Varnish 6.0.6 (LTS).
+The module is supported for Varnish 6.0 (LTS), 7.7 and 8.0, and is tested on 6.0.6, 6.0.8, 6.0.17, 7.7.3 and 8.0.1.
 
 ## Pre-requisites
 
