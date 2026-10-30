@@ -159,19 +159,19 @@ AC_PATH_PROG([VARNISHTEST], [varnishtest], [],
 # Set the compile arguments.
 CFLAGS+=" -Wno-unused-but-set-variable -Wno-unused-function -Wno-format-security -Wno-uninitialized -I$VARNISHSRC/include -I$VARNISHSRC -I$VARNISHSRC/bin/varnishd"
 
-AS_MKDIR_P([src])
-`cat $srcdir/src/vmod_fiftyonedegrees.vcc.template > src/vmod_fiftyonedegrees.vcc`
+AS_MKDIR_P([src/dd])
+`cat $srcdir/src/dd/vmod_fiftyonedegrees.vcc.template > src/dd/vmod_fiftyonedegrees.vcc`
 if test "x$config" = "xtest"; then
-	`cat $srcdir/src/vmod_fiftyonedegrees_extra.h.template | sed 's/OBTAIN_RESULTS_FUNC_NAME/obtainResultsFromAvailableHeadersDecor/g;s/GET_HAS_VALUES_FUNC_NAME/ResultsHashGetHasValuesDecor/g' > src/vmod_fiftyonedegrees_extra.h`
-	`cat $srcdir/src/vmod_fiftyonedegrees.vcc.template.test >> src/vmod_fiftyonedegrees.vcc`
+	`cat $srcdir/src/dd/vmod_fiftyonedegrees_extra.h.template | sed 's/OBTAIN_RESULTS_FUNC_NAME/obtainResultsFromAvailableHeadersDecor/g;s/GET_HAS_VALUES_FUNC_NAME/ResultsHashGetHasValuesDecor/g' > src/dd/vmod_fiftyonedegrees_extra.h`
+	`cat $srcdir/src/dd/vmod_fiftyonedegrees.vcc.template.test >> src/dd/vmod_fiftyonedegrees.vcc`
 else
-	`cat $srcdir/src/vmod_fiftyonedegrees_extra.h.template | sed 's/OBTAIN_RESULTS_FUNC_NAME/obtainResultsFromAvailableHeaders/g;s/GET_HAS_VALUES_FUNC_NAME/ResultsHashGetHasValues/g' > src/vmod_fiftyonedegrees_extra.h`
+	`cat $srcdir/src/dd/vmod_fiftyonedegrees_extra.h.template | sed 's/OBTAIN_RESULTS_FUNC_NAME/obtainResultsFromAvailableHeaders/g;s/GET_HAS_VALUES_FUNC_NAME/ResultsHashGetHasValues/g' > src/dd/vmod_fiftyonedegrees_extra.h`
 fi
-AC_CONFIG_SRCDIR(src/vmod_fiftyonedegrees.vcc)
+AC_CONFIG_SRCDIR(src/dd/vmod_fiftyonedegrees.vcc)
 
 AC_CONFIG_FILES(
     Makefile
-    src/Makefile
+    src/dd/Makefile
     src/ipi/Makefile)
 
 missingFileMsg=["source file not found, this is likely because the git submodule has not ben pulled."]

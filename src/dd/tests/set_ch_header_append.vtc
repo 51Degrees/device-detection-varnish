@@ -28,7 +28,7 @@ server s1 {
 } -start
 
 varnish v1 -vcl+backend {
-	import fiftyonedegrees from "${vmod_topbuild}/src/.libs/libvmod_fiftyonedegrees.so";
+	import fiftyonedegrees from "${vmod_topbuild}/src/dd/.libs/libvmod_fiftyonedegrees.so";
 	sub vcl_deliver {
 		set resp.http.Accept-CH = "existing";
 		fiftyonedegrees.set_resp_headers();

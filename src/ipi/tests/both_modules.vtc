@@ -28,7 +28,7 @@ server s1 -repeat 20 {
 } -start
 
 varnish v1 -vcl+backend {
-	import fiftyonedegrees from "${vmod_topbuild}/src/.libs/libvmod_fiftyonedegrees.so";
+	import fiftyonedegrees from "${vmod_topbuild}/src/dd/.libs/libvmod_fiftyonedegrees.so";
 	import fiftyonedegrees_ipi from "${vmod_topbuild}/src/ipi/.libs/libvmod_fiftyonedegrees_ipi.so";
 
 	sub vcl_init {

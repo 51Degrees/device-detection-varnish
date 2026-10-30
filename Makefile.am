@@ -1,6 +1,6 @@
 ACLOCAL_AMFLAGS = -I m4 -I ${LIBVARNISHAPI_DATAROOTDIR}/aclocal
 
-SUBDIRS = src src/ipi
+SUBDIRS = src/dd src/ipi
 
 DISTCHECK_CONFIGURE_FLAGS = \
 	--with-config=test \
@@ -19,7 +19,7 @@ MAINTAINERCLEANFILES = $(dist_man_MANS)
 distclean-local:
 	if test "$(srcdir)" != "."; then rm -f $(dist_man_MANS); fi
 
-vmod_fiftyonedegrees.4: src/vmod_fiftyonedegrees.man.rst
+vmod_fiftyonedegrees.4: src/dd/vmod_fiftyonedegrees.man.rst
 vmod_fiftyonedegrees_ipi.4: src/ipi/vmod_fiftyonedegrees_ipi.man.rst
 
 %.1 %.2 %.3 %.4 %.5 %.6 %.7 %.8 %.9:

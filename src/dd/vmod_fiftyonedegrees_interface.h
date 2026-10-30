@@ -36,8 +36,8 @@
 #define FIFTYONEDEGREES_PROPERTY_NOT_FOUND "N/A"
 #endif
 
-#include "../cxx/src/dd/hash/fiftyone.h"
-#include "../cxx/src/dd/hash/hash.h"
+#include "../../cxx/src/dd/hash/fiftyone.h"
+#include "../../cxx/src/dd/hash/hash.h"
 #include "vmod_fiftyonedegrees_extra.h"
 
 #define CONFIG_OPTION(t) \
