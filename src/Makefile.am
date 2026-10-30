@@ -50,11 +50,7 @@ libvmod_fiftyonedegrees_la_SOURCES = \
 	../cxx/src/common/wkbtot.c \
 	../cxx/src/common/yamlfile.c
 
-if FIFTYONEDEGREES_DATAFILE_ABS
-datafile = @FIFTYONEDEGREES_DATAFILE@
-else
-datafile = $(abs_top_builddir)/@FIFTYONEDEGREES_DATAFILE@
-endif
+datafile = @FIFTYONEDEGREES_DATAFILE_ABSOLUTE@
 
 testargs = 
 
@@ -74,8 +70,8 @@ vmod_fiftyonedegrees.lo: vcc_if.c vcc_if.h
 
 vcc_if.c: vcc_if.h
 
-vcc_if.h: @VMODTOOL@ $(top_srcdir)/src/vmod_fiftyonedegrees.vcc
-	@VMODTOOL@ $(top_srcdir)/src/vmod_fiftyonedegrees.vcc
+vcc_if.h: @VMODTOOL@ $(builddir)/vmod_fiftyonedegrees.vcc
+	@VMODTOOL@ $(builddir)/vmod_fiftyonedegrees.vcc
 
 VMOD_TESTS = $(top_srcdir)/src/tests/*.vtc
 .PHONY: $(VMOD_TESTS)
@@ -86,12 +82,83 @@ $(top_srcdir)/src/tests/*.vtc: libvmod_fiftyonedegrees.la
 
 check: $(VMOD_TESTS)
 
+noinst_HEADERS = \
+	vmod_fiftyonedegrees_interface.h \
+	vmod_fiftyonedegrees_varnish.h \
+	../cxx/src/common/array.h \
+	../cxx/src/common/bool.h \
+	../cxx/src/common/cache.h \
+	../cxx/src/common/collection.h \
+	../cxx/src/common/collectionKey.h \
+	../cxx/src/common/collectionKeyTypes.h \
+	../cxx/src/common/common.h \
+	../cxx/src/common/component.h \
+	../cxx/src/common/config.h \
+	../cxx/src/common/constants.h \
+	../cxx/src/common/data.h \
+	../cxx/src/common/dataset.h \
+	../cxx/src/common/date.h \
+	../cxx/src/common/evidence.h \
+	../cxx/src/common/exceptions.h \
+	../cxx/src/common/fiftyone.h \
+	../cxx/src/common/file.h \
+	../cxx/src/common/fileOffset.h \
+	../cxx/src/common/float.h \
+	../cxx/src/common/headers.h \
+	../cxx/src/common/indices.h \
+	../cxx/src/common/ip.h \
+	../cxx/src/common/json.h \
+	../cxx/src/common/list.h \
+	../cxx/src/common/memory.h \
+	../cxx/src/common/overrides.h \
+	../cxx/src/common/pair.h \
+	../cxx/src/common/pool.h \
+	../cxx/src/common/process.h \
+	../cxx/src/common/profile.h \
+	../cxx/src/common/properties.h \
+	../cxx/src/common/property.h \
+	../cxx/src/common/propertyValueType.h \
+	../cxx/src/common/resource.h \
+	../cxx/src/common/results.h \
+	../cxx/src/common/snprintf.h \
+	../cxx/src/common/status.h \
+	../cxx/src/common/storedBinaryValue.h \
+	../cxx/src/common/string.h \
+	../cxx/src/common/stringBuilder.h \
+	../cxx/src/common/textfile.h \
+	../cxx/src/common/threading.h \
+	../cxx/src/common/tree.h \
+	../cxx/src/common/value.h \
+	../cxx/src/common/weightedItem.h \
+	../cxx/src/common/wkbtot.h \
+	../cxx/src/common/yamlfile.h \
+	../cxx/src/dd/config-dd.h \
+	../cxx/src/dd/dataset-dd.h \
+	../cxx/src/dd/fiftyone.h \
+	../cxx/src/dd/gethighentropyvalues.h \
+	../cxx/src/dd/results-dd.h \
+	../cxx/src/dd/transform.h \
+	../cxx/src/dd/hash/fiftyone.h \
+	../cxx/src/dd/hash/graph.h \
+	../cxx/src/dd/hash/hash.h
+
 EXTRA_DIST = \
 	vmod_fiftyonedegrees.vcc \
-	$(VMOD_TESTS)
+	vmod_fiftyonedegrees.vcc.template \
+	vmod_fiftyonedegrees.vcc.template.test \
+	vmod_fiftyonedegrees_extra.h.template \
+	tests
 
 CLEANFILES = \
 	$(builddir)/vcc_if.c \
 	$(builddir)/vcc_if.h \
 	$(builddir)/vmod_fiftyonedegrees.rst \
-	$(builddir)/vmod_fiftyonedegrees.man.rst
+	$(builddir)/vmod_fiftyonedegrees.man.rst \
+	$(builddir)/vmod_vcs_version.txt
+
+# configure writes these. In a source checkout they are left in place, as the
+# .vcc file is tracked.
+distclean-local:
+	if test "$(srcdir)" != "."; then \
+		rm -f vmod_fiftyonedegrees.vcc vmod_fiftyonedegrees_extra.h; \
+	fi
