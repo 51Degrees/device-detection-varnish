@@ -29,6 +29,8 @@
 #ifndef VMOD_FIFTYONEDEGREES_VARNISH_H
 #define VMOD_FIFTYONEDEGREES_VARNISH_H
 
+#include <string.h>
+
 /**
  * @file
  * Differences between the versions of Varnish the modules build against, kept
@@ -108,6 +110,26 @@ static inline void vmodfodUnsetHeader(struct http *hp, const char *name)
 #else
 	http_Unset(hp, name);
 #endif
+}
+
+/**
+ * Find the length of the values the 51Degrees library wrote to a buffer. The
+ * count it returns includes the null terminator when there is room for one, and
+ * is the length of all the values when they do not fit, so the string is measured
+ * and the count only shows whether the values were cut short.
+ * @param p the buffer, with the last byte cleared before the library was called
+ * @param u the size of the buffer
+ * @param count the count the library returned
+ * @return the length excluding the null terminator, or u if the values do not fit
+ */
+static inline unsigned vmodfodValueLength(char *p, unsigned u, size_t count)
+{
+	const char *end = (const char *)memchr(p, '\0', u);
+	if (end == NULL || count > (size_t)(end - p) + 1) {
+		p[u - 1] = '\0';
+		return u;
+	}
+	return (unsigned)(end - p);
 }
 
 #endif
