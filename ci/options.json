@@ -30,5 +30,19 @@
     "Name": "ubuntu-24.04_Varnish8.0.1_MemCheck",
     "VarnishVersion": "8.0.1",
     "MemCheck": true
+  },
+  {
+    "Image": "ubuntu-24.04",
+    "Name": "ubuntu-24.04_DD",
+    "VarnishVersion": "8.0.1",
+    "RunPerformance": true,
+    "PackageRequirement": true
+  },
+  {
+    "Image": "ubuntu-24.04",
+    "Name": "ubuntu-24.04_IPI",
+    "VarnishVersion": "8.0.1",
+    "RunPerformance": true,
+    "PackageRequirement": true
   }
 ]

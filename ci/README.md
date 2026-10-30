@@ -11,7 +11,7 @@ The following secrets are required:
 
 - There are no packages for a package manager, so the output of a publish is a new tag and a release, with a source tarball attached.
 - Windows is not supported, as Varnish does not run there.
-- There are no performance tests, so `run-performance-tests.ps1` does nothing.
+- The performance configurations in `options.json` have stable names with no Varnish version, `ubuntu-24.04_DD` for device detection and `ubuntu-24.04_IPI` for IP Intelligence, so that each graph keeps its history.
 - There is no package update step, as there are no package dependencies.
 - The Varnish 6.0 builds need `libpcre3-dev`, which later Ubuntu releases may drop, so `options.json` names `ubuntu-24.04` rather than `ubuntu-latest`.
 
