@@ -22,3 +22,4 @@ The additional build options for this repository are:
 | Option | Type | Default | Purpose |
 | ------ | ---- | ------- | ------- |
 | `VarnishVersion` | string | `6.0.17` | The version of Varnish to build from source and test against. |
+| `MemCheck` | bool | `false` | If true, the unit tests run through `make mem-check`, with the modules built with the address sanitizer. |

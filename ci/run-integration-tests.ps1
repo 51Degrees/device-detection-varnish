@@ -1,7 +1,15 @@
 param(
-    [string]$Name = "integration"
+    [string]$Name = "integration",
+    [bool]$MemCheck = $False
 )
 $ErrorActionPreference = "Stop"
+
+# A library built with the address sanitizer only loads through make mem-check,
+# which the unit tests have already run.
+if ($MemCheck) {
+    Write-Output "Not repeating the tests with the larger data file"
+    exit 0
+}
 
 $repo = (Get-Item $PSScriptRoot/..).FullName
 $assets = "$PWD/assets"

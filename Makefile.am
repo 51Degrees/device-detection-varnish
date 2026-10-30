@@ -44,3 +44,12 @@ $(top_srcdir)/tests/examples/*.vtc:
 
 # Runs each example, so what the examples show stays true.
 check-local: $(EXAMPLE_TESTS)
+
+# Builds both modules with the address sanitizer and runs the tests. varnishd
+# is not built with it, so its library has to be loaded first. Leaks are not
+# checked, as varnishd does not free what it holds when it exits, and the two
+# modules define the same names on purpose.
+mem-check:
+	$(MAKE) clean
+	$(MAKE) CFLAGS="$(CFLAGS) -fsanitize=address -fno-omit-frame-pointer -O1" LDFLAGS="$(LDFLAGS) -fsanitize=address"
+	LD_PRELOAD=`$(CC) -print-file-name=libasan.so` ASAN_OPTIONS=detect_leaks=0:detect_odr_violation=0 $(MAKE) -k check
