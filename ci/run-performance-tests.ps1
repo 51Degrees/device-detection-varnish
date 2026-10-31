@@ -9,9 +9,6 @@ $repo = (Get-Item $RepoName).FullName
 $assets = "$PWD/assets"
 $common = $PWD
 
-Write-Output "Installing what the benchmark tool needs"
-sudo apt-get -y install cmake libapr1-dev libaprutil1-dev
-
 # Configurations named _IPI measure IP Intelligence, and the others device
 # detection, so each has its own graph.
 $ipi = $Name -like '*_IPI'
@@ -29,15 +26,24 @@ if ($ipi) {
     $env:EVIDENCE = "$assets/20000 Evidence Records.yml"
 }
 
-$build = New-Item -ItemType Directory -Force -Path "$repo/tests/performance/build"
-Push-Location $build
+# A run that failed writes no results and only warns, because failing here would
+# fail the Test job and stop the night's release.
 try {
-    cmake ..
-    cmake --build .
-    ./runPerf.sh
-    $results = "$PWD/results.json"
-} finally {
-    Pop-Location
-}
+    Write-Output "Installing what the benchmark tool needs"
+    sudo apt-get -y install cmake libapr1-dev libaprutil1-dev
 
-& $common/steps/publish-performance-results.ps1 -SourceFile $results -Name $Name -RepoName $RepoName
+    $build = New-Item -ItemType Directory -Force -Path "$repo/tests/performance/build"
+    Push-Location $build
+    try {
+        cmake ..
+        cmake --build .
+        ./runPerf.sh
+    } finally {
+        Pop-Location
+    }
+
+    & $common/steps/publish-performance-results.ps1 -SourceFile "$build/results.json" -Name $Name -RepoName $RepoName
+} catch {
+    Write-Warning "No results for ${Name}: $_"
+    $global:LASTEXITCODE = 0
+}
