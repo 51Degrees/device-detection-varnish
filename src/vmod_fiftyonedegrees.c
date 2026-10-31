@@ -33,6 +33,7 @@
 #include "cache/cache.h"
 #include "string.h"
 #include "vcc_if.h"
+#include "vmod_fiftyonedegrees_varnish.h"
 #include "vmod_fiftyonedegrees_interface.h"
 
 
@@ -65,6 +66,8 @@ void privResourceFree(void *ptr)
 	free(ptr);
 }
 
+VMODFOD_PRIV_FREE(privResourceFree)
+
 /**
  * VMOD init
  * Initialise the 51Degrees ResourceManager and ConfigHash by allocating
@@ -74,7 +77,7 @@ void privResourceFree(void *ptr)
  * @param e the event identifier
  * @return return code
  */
-int init_function(
+int VMODFOD_EVENT(init_function)(
 	const struct vrt_ctx *ctx,
 	struct vmod_priv *priv,
 	enum vcl_event_e e)
@@ -97,7 +100,7 @@ int init_function(
 				global.config = (ConfigHash *)(global.manager + 1);
 				// Set the callback function which will be called when the
 				// module is discarded
-				priv->free = privResourceFree;
+				VMODFOD_PRIV_SET_FREE(priv, privResourceFree);
 				return (0);
 			}
 		default:
@@ -169,9 +172,7 @@ VCL_STRING vmod_get_dataset_name(const struct vrt_ctx *ctx)
 	DataSetHash *dataset;
 
 	// Reserved some workspace
-	u = WS_Reserve(ctx->ws, 0);
-	// Get pointer to the front of the work space
-	p = ctx->ws->f;
+	u = vmodfodReserve(ctx->ws, &p);
 
 	// Get a safe reference to the dataset
 	dataset = DataSetHashGet(global.manager);
@@ -208,9 +209,7 @@ VCL_STRING vmod_get_dataset_format(const struct vrt_ctx *ctx)
 	DataSetHash *dataset;
 
 	// Reserved some workspace
-	u = WS_Reserve(ctx->ws, 0);
-	// Get pointer to the front of the work space
-	p = ctx->ws->f;
+	u = vmodfodReserve(ctx->ws, &p);
 
 	// Get a safe reference to the dataset
 	dataset = DataSetHashGet(global.manager);
@@ -243,8 +242,7 @@ VCL_STRING vmod_get_dataset_published_date(const struct vrt_ctx *ctx)
 
 	DataSetHash *dataset;
 
-	u = WS_Reserve(ctx->ws, 0);
-	p = ctx->ws->f;
+	u = vmodfodReserve(ctx->ws, &p);
 
 	dataset = DataSetHashGet(global.manager);
 	v = snprintf(p, u, "%d-%d-%d",
@@ -624,7 +622,7 @@ void vmod_start(const struct vrt_ctx *ctx, VCL_STRING filePath)
  * @param ctx the context
  * @param a the vmod argument which contains the file path. 
  */
-void vmod_reload(const struct vrt_ctx *ctx, struct vmod_reload_arg *a) {
+void vmod_reload(const struct vrt_ctx *ctx, struct VARGS(reload) *a) {
 	const char *filePath;
 
 	EXCEPTION_CREATE
@@ -1006,9 +1004,7 @@ VCL_STRING vmod_match_single(
 	char *propertiesString, *returnString;
 
 	// Reserve some workspace.
-	u = WS_Reserve(ctx->ws, 0);
-	// Get pointer to the front of the workspace.
-	p = ctx->ws->f;
+	u = vmodfodReserve(ctx->ws, &p);
 
 	// Copy the properties string to the workspace memorys.
 	v += snprintf(p, u, "%s", propertyInputString);
@@ -1218,9 +1214,7 @@ VCL_STRING vmod_match_all(
 	char **propertiesArray;
 
 	// Reserve some workspace.
-	u = WS_Reserve(ctx->ws, 0);
-	// Pointer to the front of workspace area.
-	p = ctx->ws->f;
+	u = vmodfodReserve(ctx->ws, &p);
 
 	// Copy the properties string to the workspace memory.
 	v += snprintf(p, u, "%s", propertyInputString);
@@ -1372,9 +1366,7 @@ void vmod_set_resp_headers(const struct vrt_ctx *ctx)
 	unsigned u, v = 0;
 
 	// Reserve some workspace.
-	u = WS_Reserve(ctx->ws, 0);
-	// Get pointer to the front of the workspace.
-	p = ctx->ws->f;
+	u = vmodfodReserve(ctx->ws, &p);
 
 
 	// Create exception
@@ -1440,7 +1432,7 @@ void vmod_set_resp_headers(const struct vrt_ctx *ctx)
 				v++;
 				existingHdr[0] = strlen(existingHdr + 1);
 				// Remove the existing header.
-				http_Unset(ctx->http_resp, existingHdr);
+				vmodfodUnsetHeader(ctx->http_resp, existingHdr);
 			}
 			http_SetHeader(ctx->http_resp, currentHeaderString);
 		}
@@ -1469,9 +1461,7 @@ VCL_STRING vmod_evidence_used(
 	unsigned u, v = 0;
 
 	// Reserve some workspace.
-	u = WS_Reserve(ctx->ws, 0);
-	// Get pointer to the front of the workspace.
-	p = ctx->ws->f;
+	u = vmodfodReserve(ctx->ws, &p);
 
 	returnString = p;
 

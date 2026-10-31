@@ -28,6 +28,7 @@
 #include "cache/cache.h"
 #include "string.h"
 #include "vcc_if.h"
+#include "vmod_fiftyonedegrees_varnish.h"
 #include "vmod_fiftyonedegrees_interface.h"
 
 /**
@@ -149,9 +150,7 @@ VCL_STRING vmod_get_performance_profile(const struct vrt_ctx *ctx)
 	unsigned u, v;
 
 	// Reserved some workspace
-	u = WS_Reserve(ctx->ws, 0);
-	// Get pointer to the front of the work space
-	p = ctx->ws->f;
+	u = vmodfodReserve(ctx->ws, &p);
 
 	if (global.config->strings.loaded == HashInMemoryConfig.strings.loaded
 		&& global.config->strings.capacity == HashInMemoryConfig.strings.capacity
