@@ -9,7 +9,7 @@ The following secrets are required:
 
 ## Differences
 
-- There are no packages for a package manager, so the output of a publish is a new tag and a release.
+- There are no packages for a package manager, so the output of a publish is a new tag and a release, with a source tarball attached.
 - Windows is not supported, as Varnish does not run there.
 - There are no performance tests, so `run-performance-tests.ps1` does nothing.
 - There is no package update step, as there are no package dependencies.

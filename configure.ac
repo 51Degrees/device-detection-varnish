@@ -89,9 +89,11 @@ else
 	AC_MSG_NOTICE([Including data file at '$datafile'])
 fi
 
-AC_SUBST(FIFTYONEDEGREES_DATAFILE, $datafile)
-leadingslash=`echo $datafile | $EGREP -o '^/'`
-AM_CONDITIONAL([FIFTYONEDEGREES_DATAFILE_ABS], [test x$leadingslash = x/])
+case "$datafile" in
+	/*) datafileabsolute=$datafile ;;
+	*) datafileabsolute=`pwd`/$datafile ;;
+esac
+AC_SUBST(FIFTYONEDEGREES_DATAFILE_ABSOLUTE, $datafileabsolute)
 
 # Define the version and add the option to redefine in configure.
 AC_ARG_WITH([version],
@@ -143,12 +145,13 @@ AC_PATH_PROG([VARNISHTEST], [varnishtest], [],
 # Set the compile arguments.
 CFLAGS+=" -Wno-unused-but-set-variable -Wno-unused-function -Wno-format-security -Wno-uninitialized -I$VARNISHSRC/include -I$VARNISHSRC -I$VARNISHSRC/bin/varnishd"
 
-`cat src/vmod_fiftyonedegrees.vcc.template > src/vmod_fiftyonedegrees.vcc`
+AS_MKDIR_P([src])
+`cat $srcdir/src/vmod_fiftyonedegrees.vcc.template > src/vmod_fiftyonedegrees.vcc`
 if test "x$config" = "xtest"; then
-	`cat src/vmod_fiftyonedegrees_extra.h.template | sed 's/OBTAIN_RESULTS_FUNC_NAME/obtainResultsFromAvailableHeadersDecor/g;s/GET_HAS_VALUES_FUNC_NAME/ResultsHashGetHasValuesDecor/g' > src/vmod_fiftyonedegrees_extra.h`
-	`cat src/vmod_fiftyonedegrees.vcc.template.test >> src/vmod_fiftyonedegrees.vcc`
+	`cat $srcdir/src/vmod_fiftyonedegrees_extra.h.template | sed 's/OBTAIN_RESULTS_FUNC_NAME/obtainResultsFromAvailableHeadersDecor/g;s/GET_HAS_VALUES_FUNC_NAME/ResultsHashGetHasValuesDecor/g' > src/vmod_fiftyonedegrees_extra.h`
+	`cat $srcdir/src/vmod_fiftyonedegrees.vcc.template.test >> src/vmod_fiftyonedegrees.vcc`
 else
-	`cat src/vmod_fiftyonedegrees_extra.h.template | sed 's/OBTAIN_RESULTS_FUNC_NAME/obtainResultsFromAvailableHeaders/g;s/GET_HAS_VALUES_FUNC_NAME/ResultsHashGetHasValues/g' > src/vmod_fiftyonedegrees_extra.h`
+	`cat $srcdir/src/vmod_fiftyonedegrees_extra.h.template | sed 's/OBTAIN_RESULTS_FUNC_NAME/obtainResultsFromAvailableHeaders/g;s/GET_HAS_VALUES_FUNC_NAME/ResultsHashGetHasValues/g' > src/vmod_fiftyonedegrees_extra.h`
 fi
 AC_CONFIG_SRCDIR(src/vmod_fiftyonedegrees.vcc)
 
@@ -158,16 +161,16 @@ AC_CONFIG_FILES(
 
 missingFileMsg=["source file not found, this is likely because the git submodule has not ben pulled."]
 missingDataMsg=["data file '$datafile' not found."]
-AC_CHECK_FILES(cxx/src/common/fiftyone.h,
+AC_CHECK_FILES($srcdir/cxx/src/common/fiftyone.h,
     [],
     [AC_MSG_ERROR($missingFileMsg)])
-AC_CHECK_FILES(cxx/src/dd/dataset-dd.h,
+AC_CHECK_FILES($srcdir/cxx/src/dd/dataset-dd.h,
     [],
     [AC_MSG_ERROR($missingFileMsg)])
-AC_CHECK_FILES(cxx/src/dd/config-dd.h,
+AC_CHECK_FILES($srcdir/cxx/src/dd/config-dd.h,
     [],
     [AC_MSG_ERROR($missingFileMsg)])
-AC_CHECK_FILES(cxx/src/dd/results-dd.h,
+AC_CHECK_FILES($srcdir/cxx/src/dd/results-dd.h,
     [],
     [AC_MSG_ERROR($missingFileMsg)])
 AC_CHECK_FILES($datafile,
