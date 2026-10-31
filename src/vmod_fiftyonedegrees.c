@@ -753,7 +753,6 @@ static unsigned writeValue(
 	unsigned u,
 	bool logMissing) {
 	size_t count;
-	const char *end;
 	unsigned length = 0;
 	bool hasValues = false;
 
@@ -786,15 +785,7 @@ static unsigned writeValue(
 				p[0] = '\0';
 			}
 			else {
-				// The count may or may not include the null terminator, so
-				// measure the string written instead. A count of more than
-				// one past that length means the value was cut short.
-				end = memchr(p, '\0', u);
-				if (end == NULL || count > (size_t)(end - p) + 1) {
-					p[u - 1] = '\0';
-					return u;
-				}
-				length = (unsigned)(end - p);
+				length = vmodfodValueLength(p, u, count);
 			}
 		}
 		else

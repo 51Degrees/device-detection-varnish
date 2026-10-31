@@ -27,7 +27,9 @@ DESCRIPTION
 
 51Degrees IP Intelligence module for Varnish.
 
-Load a data file in vcl_init with fiftyonedegrees_ipi.start(datafilepath).
+Load a data file in vcl_init with fiftyonedegrees_ipi.start(datafilepath), then
+get the values of properties for an IP address with
+fiftyonedegrees_ipi.match(properties).
 
 This module can be loaded on its own, or alongside the fiftyonedegrees module.
 
@@ -46,3 +48,96 @@ Example
 	::
 
 		fiftyonedegrees_ipi.start("/path/to/51Degrees-IPIV4AsnIpiV41.ipi");
+
+$Function VOID reload(PRIV_VCL, STRING filePath = "")
+
+Return value
+	VOID
+Description
+	Reloads the data using the given data file path, or the original path
+	if none is given. If that fails the reason is logged and the data
+	already loaded stays in use.
+
+$Function STRING match(PRIV_VCL, STRING properties, [STRING ip])
+
+Return value
+	STRING
+Description
+	Looks up an IP address and returns the values of the properties named,
+	in the same order and separated by the delimiter. By default the
+	address is client.ip, and the optional second argument gives a single
+	IP address to use instead, for example from a header. It does not read
+	a list of addresses, so take the address to look up from X-Forwarded-For
+	in VCL.
+
+	Each value takes the form "value":weight, where the weight is a number
+	between 0 and 1 showing the confidence in the value. A property with
+	several values has them separated by a pipe. The double quotes are
+	escaped with a backslash, so the string can be used as a header value.
+
+	A property which was not loaded, has no value, or a missing or
+	malformed address, gives N/A in place of each value and the reason is
+	logged as a VCL_Error record. The request carries on.
+
+	If the values do not fit in the workspace, the result is not set.
+Example
+	::
+
+		set req.http.x-asn = fiftyonedegrees_ipi.match("AsnName");
+		set req.http.x-asn-real = fiftyonedegrees_ipi.match("AsnName", req.http.X-Real-IP);
+
+$Function VOID set_properties(PRIV_VCL, STRING properties)
+
+Description
+	Sets the properties to load, as a comma separated list, before start.
+	Only loading the properties needed reduces memory use and makes each
+	match faster. By default all properties in the data file are loaded.
+Example
+	::
+
+		fiftyonedegrees_ipi.set_properties("AsnName");
+
+$Function VOID set_delimiter(PRIV_VCL, STRING delimiter)
+
+Description
+	Sets the string which separates the values of different properties,
+	before start. By default this is a comma.
+Example
+	::
+
+		fiftyonedegrees_ipi.set_delimiter(";");
+
+$Function VOID set_performance_profile(PRIV_VCL, STRING performanceProfile)
+
+Description
+	Sets how much of the data is held in memory, before start. The possible
+	profiles are "DEFAULT", "IN_MEMORY", "HIGH_PERFORMANCE", "LOW_MEMORY"
+	and "BALANCED". By default the "DEFAULT" profile is used.
+Example
+	::
+
+		fiftyonedegrees_ipi.set_performance_profile("LOW_MEMORY");
+
+$Function VOID set_max_concurrency(PRIV_VCL, INT concurrency)
+
+Description
+	Sets the maximum number of expected concurrent requests, before start.
+Example
+	::
+
+		fiftyonedegrees_ipi.set_max_concurrency(200);
+
+$Function STRING get_dataset_name(PRIV_VCL)
+
+Description
+	Gets the name of the data file loaded.
+
+$Function STRING get_dataset_format(PRIV_VCL)
+
+Description
+	Gets the format of the data file loaded.
+
+$Function STRING get_dataset_published_date(PRIV_VCL)
+
+Description
+	Gets the date the data file loaded was published, as year-month-day.
