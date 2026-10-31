@@ -1,9 +1,9 @@
 #
 # This Original Work is copyright of 51 Degrees Mobile Experts Limited.
-# Copyright 2020 51 Degrees Mobile Experts Limited, 5 Charlotte Close,
+# Copyright 2026 51 Degrees Mobile Experts Limited, 5 Charlotte Close,
 # Caversham, Reading, Berkshire, United Kingdom RG4 7BY.
 #
-# This Original Work is licensed under the European Union Public Licence (EUPL) 
+# This Original Work is licensed under the European Union Public Licence (EUPL)
 # v.1.2 and is subject to its terms as set out below.
 #
 # If a copy of the EUPL was not distributed with this file, You can obtain
@@ -13,15 +13,14 @@
 # amended by the European Commission) shall be deemed incompatible for
 # the purposes of the Work and the provisions of the compatibility
 # clause in Article 5 of the EUPL shall not apply.
-# 
-# If using the Work as, or as part of, a network application, by 
+#
+# If using the Work as, or as part of, a network application, by
 # including the attribution notice(s) required under Article 5 of the EUPL
-# in the end user terms of the application under an appropriate heading, 
+# in the end user terms of the application under an appropriate heading,
 # such notice(s) shall fulfill the requirements of that article.
 #
 
-varnishtest "Test fiftyonedegrees vmod"
-feature cmd {echo "${TEST_BUILD}" | grep -q "true"}
+varnishtest "Test the evidence used by match_all"
 
 server s1 {
        rxreq
@@ -29,22 +28,22 @@ server s1 {
 } -start
 
 varnish v1 -vcl+backend {
-	import fiftyonedegrees from "${vmod_topbuild}/src/.libs/libvmod_fiftyonedegrees.so";
+	import fiftyonedegrees from "${vmod_topbuild}/src/dd/.libs/libvmod_fiftyonedegrees.so";
 
 	sub vcl_deliver {
-		set resp.http.profile = fiftyonedegrees.get_performance_profile();
+		set resp.http.evidence = fiftyonedegrees.evidence_used();
 	}
 	sub vcl_init {
-		fiftyonedegrees.set_performance_profile("DEFAULT");
 		fiftyonedegrees.start("${vmod_fod_datafile}");
 	}
 
 } -start
 
 client c1 {
-	txreq -url "/" -hdr "User-Agent: Mozilla/5.0 (Windows NT 6.3; WOW64; rv:41.0) Gecko/20100101 Firefox/41.0"
+	txreq -url "/" -hdr "User-Agent: Mozilla/5.0 (iPhone; CPU iPhone OS 7_1 like Mac OS X) AppleWebKit/537.51.2 (KHTML, like Gecko) 'Version/7.0 Mobile/11D167 Safari/9537.53"
 	rxresp
-	expect resp.http.profile == "DEFAULT"
+	expect resp.status == 200
+	expect resp.http.evidence ~ "^[{].*'User-Agent':'Mozilla/5.0 [(]iPhone; CPU iPhone OS 7_1 like Mac OS X[)] .*Safari/9537.53'.*[}]$"
 }
 
 client c1 -run

@@ -33,7 +33,7 @@
 #include "cache/cache.h"
 #include "string.h"
 #include "vcc_if.h"
-#include "vmod_fiftyonedegrees_varnish.h"
+#include "../vmod_fiftyonedegrees_varnish.h"
 #include "vmod_fiftyonedegrees_interface.h"
 
 
