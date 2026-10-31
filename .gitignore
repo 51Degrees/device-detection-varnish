@@ -36,3 +36,6 @@ stamp-h1
 test-results
 package-build
 *.tar.gz
+tests/examples/jsExample/node_modules
+tests/examples/jsExample/package-lock.json
+tests/examples/jsExample/cdn_test_results.xml
