@@ -50,7 +50,7 @@ libvmod_fiftyonedegrees_la_SOURCES = \
 	../../cxx/src/common/wkbtot.c \
 	../../cxx/src/common/yamlfile.c
 
-datafile = @FIFTYONEDEGREES_DATAFILE_ABSOLUTE@
+datafile = $(or $(51DEGREES_DD_PATH),@FIFTYONEDEGREES_DATAFILE_ABSOLUTE@)
 
 testargs = 
 
