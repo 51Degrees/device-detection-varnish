@@ -1,0 +1,82 @@
+#
+# This Original Work is copyright of 51 Degrees Mobile Experts Limited.
+# Copyright 2020 51 Degrees Mobile Experts Limited, 5 Charlotte Close,
+# Caversham, Reading, Berkshire, United Kingdom RG4 7BY.
+#
+# This Original Work is licensed under the European Union Public Licence (EUPL) 
+# v.1.2 and is subject to its terms as set out below.
+#
+# If a copy of the EUPL was not distributed with this file, You can obtain
+# one at https://opensource.org/licenses/EUPL-1.2.
+#
+# The 'Compatible Licences' set out in the Appendix to the EUPL (as may be
+# amended by the European Commission) shall be deemed incompatible for
+# the purposes of the Work and the provisions of the compatibility
+# clause in Article 5 of the EUPL shall not apply.
+# 
+# If using the Work as, or as part of, a network application, by 
+# including the attribution notice(s) required under Article 5 of the EUPL
+# in the end user terms of the application under an appropriate heading, 
+# such notice(s) shall fulfill the requirements of that article.
+#
+
+varnishtest "The JavaScript functions, for serving a property's script to a browser"
+
+# The Lite data file has no JavaScript properties and nothing to override.
+feature cmd {case "${vmod_fod_datafile}" in *Lite*) exit 1 ;; esac}
+
+server s1 -repeat 20 {
+	rxreq
+	txresp
+} -start
+
+varnish v1 -vcl+backend {
+	import fiftyonedegrees from "${vmod_topbuild}/src/dd/.libs/libvmod_fiftyonedegrees.so";
+
+	sub vcl_init {
+		fiftyonedegrees.start("${vmod_fod_datafile}");
+	}
+	sub vcl_recv {
+		return (synth(200));
+	}
+	sub vcl_synth {
+		set resp.http.Content-Type = "application/x-javascript";
+		if (req.url == "/all.js") {
+			synthetic(fiftyonedegrees.get_javascript_all("ScreenPixelsWidthJavascript"));
+		}
+		else if (req.url == "/single.js") {
+			synthetic(fiftyonedegrees.get_javascript_single(req.http.user-agent, "ScreenPixelsWidthJavascript"));
+		}
+		else if (req.url == "/no-agent.js") {
+			synthetic(fiftyonedegrees.get_javascript_single(req.http.not-sent, "ScreenPixelsWidthJavascript"));
+		}
+		else if (req.url == "/not-a-property.js") {
+			synthetic(fiftyonedegrees.get_javascript_single(req.http.user-agent, "thisisnotarealpropertyname"));
+		}
+		return (deliver);
+	}
+} -start
+
+client c1 {
+	txreq -url "/all.js" -hdr "User-Agent: Mozilla/5.0 (iPhone; CPU iPhone OS 7_1 like Mac OS X) AppleWebKit/537.51.2 (KHTML, like Gecko) Version/7.0 Mobile/11D167 Safari/9537.53"
+	rxresp
+	expect resp.status == 200
+	expect resp.http.Content-Type == "application/x-javascript"
+	expect resp.body ~ "51D_ScreenPixelsWidth"
+
+	txreq -url "/single.js" -hdr "User-Agent: Mozilla/5.0 (iPhone; CPU iPhone OS 7_1 like Mac OS X) AppleWebKit/537.51.2 (KHTML, like Gecko) Version/7.0 Mobile/11D167 Safari/9537.53"
+	rxresp
+	expect resp.status == 200
+	expect resp.body ~ "51D_ScreenPixelsWidth"
+
+	txreq -url "/no-agent.js"
+	rxresp
+	expect resp.status == 200
+
+	txreq -url "/not-a-property.js" -hdr "User-Agent: Mozilla/5.0 (iPhone; CPU iPhone OS 7_1 like Mac OS X) AppleWebKit/537.51.2 (KHTML, like Gecko) Version/7.0 Mobile/11D167 Safari/9537.53"
+	rxresp
+	expect resp.status == 200
+	expect resp.body == "/* 51Degrees Javascript not available. */"
+} -run
+
+varnish v1 -cliexpect "Child has not panicked" "panic.show"

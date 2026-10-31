@@ -101,6 +101,46 @@ Example
 
 		set req.http.X-Model = fiftyonedegrees.match_ua_client_hints("HardwareModel");
 
+$Function STRING get_javascript_all(STRING property)
+
+Return value
+	STRING
+Description
+	Gets the JavaScript in a property, using the same evidence as
+	match_all, for serving to a browser so that it can send back further
+	evidence. Use it in vcl_synth with the synthetic function. If the
+	property is not available, or the value does not fit in the workspace,
+	a JavaScript comment is returned, so a page loading it does not get a
+	syntax error. A value which does not fit is logged, and needs a larger
+	workspace_client parameter.
+Example
+	::
+
+		sub vcl_recv {
+			if (req.url == "/51D.js") {
+				return (synth(200));
+			}
+		}
+		sub vcl_synth {
+			if (req.url == "/51D.js") {
+				set resp.http.Content-Type = "application/x-javascript";
+				synthetic(fiftyonedegrees.get_javascript_all("JavascriptHardwareProfile"));
+				return (deliver);
+			}
+		}
+
+$Function STRING get_javascript_single(STRING userAgent, STRING property)
+
+Return value
+	STRING
+Description
+	Gets the JavaScript in a property for the User-Agent given, as
+	get_javascript_all does for all the evidence.
+Example
+	::
+
+		synthetic(fiftyonedegrees.get_javascript_single(req.http.user-agent, "ScreenPixelsWidthJavascript"));
+
 $Function STRING evidence_used()
 
 Return value
