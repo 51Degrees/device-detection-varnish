@@ -1,0 +1,57 @@
+#
+# This Original Work is copyright of 51 Degrees Mobile Experts Limited.
+# Copyright 2020 51 Degrees Mobile Experts Limited, 5 Charlotte Close,
+# Caversham, Reading, Berkshire, United Kingdom RG4 7BY.
+#
+# This Original Work is licensed under the European Union Public Licence (EUPL) 
+# v.1.2 and is subject to its terms as set out below.
+#
+# If a copy of the EUPL was not distributed with this file, You can obtain
+# one at https://opensource.org/licenses/EUPL-1.2.
+#
+# The 'Compatible Licences' set out in the Appendix to the EUPL (as may be
+# amended by the European Commission) shall be deemed incompatible for
+# the purposes of the Work and the provisions of the compatibility
+# clause in Article 5 of the EUPL shall not apply.
+# 
+# If using the Work as, or as part of, a network application, by 
+# including the attribution notice(s) required under Article 5 of the EUPL
+# in the end user terms of the application under an appropriate heading, 
+# such notice(s) shall fulfill the requirements of that article.
+#
+
+varnishtest "Values which do not fit in the workspace are never cut short"
+
+server s1 -repeat 20 {
+	rxreq
+	txresp
+} -start
+
+varnish v1 -vcl+backend {
+	import fiftyonedegrees_ipi from "${vmod_topbuild}/src/ipi/.libs/libvmod_fiftyonedegrees_ipi.so";
+
+	sub vcl_init {
+		fiftyonedegrees_ipi.start("${vmod_ipi_datafile}");
+	}
+	sub vcl_recv {
+		set req.http.p16 = "AsnName,AsnName,AsnName,AsnName,AsnName,AsnName,AsnName,AsnName,AsnName,AsnName,AsnName,AsnName,AsnName,AsnName,AsnName,AsnName";
+		set req.http.p64 = req.http.p16 + "," + req.http.p16 + "," + req.http.p16 + "," + req.http.p16;
+		set req.http.p256 = req.http.p64 + "," + req.http.p64 + "," + req.http.p64 + "," + req.http.p64;
+		set req.http.p1024 = req.http.p256 + "," + req.http.p256 + "," + req.http.p256 + "," + req.http.p256;
+		set req.http.p4096 = req.http.p1024 + "," + req.http.p1024 + "," + req.http.p1024 + "," + req.http.p1024;
+	}
+	sub vcl_deliver {
+		set resp.http.fits = fiftyonedegrees_ipi.match(req.http.p64, "212.58.224.22");
+		set resp.http.too-long = fiftyonedegrees_ipi.match(req.http.p4096, "212.58.224.22");
+		set resp.http.after = fiftyonedegrees_ipi.match("AsnName", "212.58.224.22");
+	}
+} -start
+
+client c1 {
+	txreq
+	rxresp
+	expect resp.status == 200
+	expect resp.http.fits ~ {^(\\"BBC\\":1,){63}\\"BBC\\":1$}
+	expect resp.http.too-long !~ "BBC"
+	expect resp.http.after == {\"BBC\":1}
+} -run

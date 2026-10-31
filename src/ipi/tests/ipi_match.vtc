@@ -1,0 +1,63 @@
+#
+# This Original Work is copyright of 51 Degrees Mobile Experts Limited.
+# Copyright 2020 51 Degrees Mobile Experts Limited, 5 Charlotte Close,
+# Caversham, Reading, Berkshire, United Kingdom RG4 7BY.
+#
+# This Original Work is licensed under the European Union Public Licence (EUPL) 
+# v.1.2 and is subject to its terms as set out below.
+#
+# If a copy of the EUPL was not distributed with this file, You can obtain
+# one at https://opensource.org/licenses/EUPL-1.2.
+#
+# The 'Compatible Licences' set out in the Appendix to the EUPL (as may be
+# amended by the European Commission) shall be deemed incompatible for
+# the purposes of the Work and the provisions of the compatibility
+# clause in Article 5 of the EUPL shall not apply.
+# 
+# If using the Work as, or as part of, a network application, by 
+# including the attribution notice(s) required under Article 5 of the EUPL
+# in the end user terms of the application under an appropriate heading, 
+# such notice(s) shall fulfill the requirements of that article.
+#
+
+varnishtest "match looks up the client's address, or the address it is given"
+
+server s1 {
+	rxreq
+	expect req.http.x-asn-given == {\"BBC\":1}
+	txresp
+} -start
+
+varnish v1 -vcl+backend {
+	import fiftyonedegrees_ipi from "${vmod_topbuild}/src/ipi/.libs/libvmod_fiftyonedegrees_ipi.so";
+
+	sub vcl_init {
+		fiftyonedegrees_ipi.start("${vmod_ipi_datafile}");
+	}
+	sub vcl_recv {
+		set req.http.x-asn-client = fiftyonedegrees_ipi.match("AsnName");
+		set req.http.x-asn-given = fiftyonedegrees_ipi.match("AsnName", "212.58.224.22");
+		set req.http.x-asn-explicit = fiftyonedegrees_ipi.match("AsnName", client.ip);
+		set req.http.x-asn-header = fiftyonedegrees_ipi.match("AsnName", req.http.x-real-ip);
+		set req.http.x-asn-v6 = fiftyonedegrees_ipi.match("AsnName", "2a00:1450:4001:81d::200e");
+	}
+	sub vcl_deliver {
+		set resp.http.x-asn-client = req.http.x-asn-client;
+		set resp.http.x-asn-given = req.http.x-asn-given;
+		set resp.http.x-asn-explicit = req.http.x-asn-explicit;
+		set resp.http.x-asn-header = req.http.x-asn-header;
+		set resp.http.x-asn-v6 = req.http.x-asn-v6;
+	}
+} -start
+
+client c1 {
+	txreq -hdr "x-real-ip: 2.248.13.139"
+	rxresp
+	expect resp.status == 200
+	expect resp.http.x-asn-given == {\"BBC\":1}
+	expect resp.http.x-asn-header == {\"TELIANET-SWEDEN\":1}
+	# The client here is a loopback address.
+	expect resp.http.x-asn-client == resp.http.x-asn-explicit
+	expect resp.http.x-asn-client ~ {^\\".+\\":[0-9.]+$}
+	expect resp.http.x-asn-v6 ~ {^\\".+\\":[0-9.]+$}
+} -run
