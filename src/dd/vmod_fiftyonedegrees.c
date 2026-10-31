@@ -1066,31 +1066,6 @@ VCL_STRING vmod_match_single(
 }
 
 /**
- * Method to obtain the number of unique headers
- * @return the number of unique headers
- */
-static int getHeaderCount()
-{
-	DataSetBase *dataset = DataSetGet(global.manager);
-	int count = dataset->uniqueHeaders->count;
-	DataSetRelease(dataset);
-	return count;
-}
-
-/**
- * Method to obtain header name at a given index
- * @param headerIndex the index of the header
- * @return header name at the given index
- */
-static const char *getHeaderName(
-	int headerIndex) {
-	DataSetBase *dataset = DataSetGet(global.manager);
-	const char *headerName = dataset->uniqueHeaders->items[headerIndex].name;
-	DataSetRelease(dataset);
-	return headerName;
-}
-
-/**
  * Get the value of the header for the request or response context.
  * @param reqOrResp the request or response from the context (e.g.
  * ctx->http_req)
@@ -1100,83 +1075,341 @@ static const char *getHeaderName(
 static char *searchHeaders(const struct http *reqOrResp, const char *headerName)
 {
 	char *currentHeader;
+	size_t length = strlen(headerName);
 	int i;
 	for (i = 0; i < reqOrResp->nhd; i++)
 	{
 		currentHeader = (char*)reqOrResp->hd[i].b;
 		if (currentHeader != NULL
-			&& StringCompareLength(currentHeader, headerName, strlen(headerName)) == 0)
+			&& StringCompareLength(currentHeader, headerName, length) == 0
+			&& currentHeader[length] == ':')
 		{
-			return currentHeader + strlen(headerName) + 2;
+			currentHeader += length + 1;
+			while (*currentHeader == ' ' || *currentHeader == '\t') {
+				currentHeader++;
+			}
+			return currentHeader;
+		}
+	}
+	return NULL;
+}
+
+/** Start of the name of a cookie or query argument which overrides a property. */
+#define VMODFOD_OVERRIDE_PREFIX "51D_"
+
+/**
+ * Evidence from a request, with the strings made for it.
+ */
+typedef struct vmodfod_evidence_t {
+	EvidenceKeyValuePairArray *pairs; /**< The evidence */
+	char **strings; /**< Keys and values to free along with the evidence */
+	int stringCount; /**< Number of strings */
+} vmodfod_evidence;
+
+/**
+ * Convert a hexadecimal digit to its value.
+ * @param c the digit
+ * @return the value, or -1 if the character is not a hexadecimal digit
+ */
+static int hexValue(char c)
+{
+	if (c >= '0' && c <= '9') {
+		return c - '0';
+	}
+	if (c >= 'a' && c <= 'f') {
+		return c - 'a' + 10;
+	}
+	if (c >= 'A' && c <= 'F') {
+		return c - 'A' + 10;
+	}
+	return -1;
+}
+
+/**
+ * Find the value of a name in a list of name=value pairs, comparing the names
+ * without regard to case.
+ * @param list the start of the list
+ * @param end the end of the list
+ * @param separator the character between pairs
+ * @param name the name to find
+ * @param decode true to decode percent encoded characters in the value
+ * @return a copy of the value to free, or NULL if the name is not found or the
+ * value is empty
+ */
+static char *findPairValue(
+	const char *list,
+	const char *end,
+	char separator,
+	const char *name,
+	bool decode)
+{
+	size_t nameLength = strlen(name);
+	const char *pair = list, *pairEnd, *value;
+	char *result, *to;
+
+	while (pair < end) {
+		while (pair < end && (*pair == ' ' || *pair == '\t')) {
+			pair++;
+		}
+		pairEnd = memchr(pair, separator, (size_t)(end - pair));
+		if (pairEnd == NULL) {
+			pairEnd = end;
+		}
+		value = pair + nameLength;
+		if (value < pairEnd
+			&& *value == '='
+			&& StringCompareLength(pair, name, nameLength) == 0) {
+			value++;
+			if (value == pairEnd) {
+				return NULL;
+			}
+			result = (char *)malloc((size_t)(pairEnd - value) + 1);
+			if (result == NULL) {
+				return NULL;
+			}
+			to = result;
+			while (value < pairEnd) {
+				if (decode
+					&& *value == '%'
+					&& pairEnd - value > 2
+					&& hexValue(value[1]) >= 0
+					&& hexValue(value[2]) >= 0) {
+					*to++ = (char)(hexValue(value[1]) * 16 + hexValue(value[2]));
+					value += 3;
+				}
+				else {
+					*to++ = *value++;
+				}
+			}
+			*to = '\0';
+			return result;
+		}
+		pair = pairEnd + 1;
+	}
+	return NULL;
+}
+
+/**
+ * Find a query argument in the URL of the request.
+ * @param ctx the context
+ * @param name the name of the argument
+ * @return a copy of the decoded value to free, or NULL if there is none
+ */
+static char *findQueryValue(const struct vrt_ctx *ctx, const char *name)
+{
+	const char *url = ctx->http_req->hd[HTTP_HDR_URL].b;
+	const char *query, *end;
+	if (url == NULL) {
+		return NULL;
+	}
+	query = strchr(url, '?');
+	if (query == NULL) {
+		return NULL;
+	}
+	query++;
+	end = strchr(query, '#');
+	if (end == NULL) {
+		end = query + strlen(query);
+	}
+	return findPairValue(query, end, '&', name, true);
+}
+
+/**
+ * Find a cookie in the request. A request can have more than one Cookie header.
+ * @param ctx the context
+ * @param name the name of the cookie
+ * @return a copy of the value to free, or NULL if there is none
+ */
+static char *findCookieValue(const struct vrt_ctx *ctx, const char *name)
+{
+	static const char cookie[] = "Cookie:";
+	const struct http *req = ctx->http_req;
+	const char *header;
+	char *value;
+	int i;
+	for (i = HTTP_HDR_FIRST; i < req->nhd; i++) {
+		header = req->hd[i].b;
+		if (header != NULL
+			&& StringCompareLength(header, cookie, sizeof(cookie) - 1) == 0) {
+			header += sizeof(cookie) - 1;
+			value = findPairValue(
+				header,
+				header + strlen(header),
+				';',
+				name,
+				false);
+			if (value != NULL) {
+				return value;
+			}
 		}
 	}
 	return NULL;
 }
 
 /**
- * Method to fill evidence with all available HTTP request header
- * @param ctx the context
- * @param evidence the evidence object
+ * Add evidence whose value was made for this request.
+ * @param evidence the evidence to add to
+ * @param prefix where the value came from
+ * @param key the key, which must last as long as the evidence
+ * @param value the value, or NULL to add nothing. This is freed with the
+ * evidence.
  */
-static void setImportantHeaders(
-	const struct vrt_ctx *ctx,
-	EvidenceKeyValuePairArray *evidence)
+static void addFoundEvidence(
+	vmodfod_evidence *evidence,
+	EvidencePrefix prefix,
+	const char *key,
+	char *value)
 {
-	int headerIndex;
-	char *headerValue;
-	const char *headerName;
-
-	// Loop over all important headers.
-	for (headerIndex = 0;
-		 headerIndex < getHeaderCount(global.manager);
-		 headerIndex++)
-	{
-		// Get the header name at the current index
-		headerName = getHeaderName(headerIndex);
-		// Look for the current header in the request.
-		headerValue = searchHeaders(
-			ctx->http_req,
-			headerName);
-		if (headerValue) {
-			// The request contains the header, so add it to the important
-			// headers to be matched.
-			EvidenceAddString(
-				evidence,
-				FIFTYONE_DEGREES_EVIDENCE_HTTP_HEADER_STRING,
-				headerName,
-				headerValue);
-		}
+	if (value != NULL) {
+		evidence->strings[evidence->stringCount++] = value;
+		EvidenceAddString(evidence->pairs, prefix, key, value);
 	}
 }
 
 /**
- * Obtain the results from the available headers.
+ * Add the query argument with the name of a piece of evidence.
+ * @param ctx the context
+ * @param evidence the evidence to add to
+ * @param key the key, which must last as long as the evidence
+ */
+static void addQueryEvidence(
+	const struct vrt_ctx *ctx,
+	vmodfod_evidence *evidence,
+	const char *key)
+{
+	addFoundEvidence(
+		evidence,
+		FIFTYONE_DEGREES_EVIDENCE_QUERY,
+		key,
+		findQueryValue(ctx, key));
+}
+
+/**
+ * Free evidence from createEvidence.
+ * @param evidence the evidence to free
+ */
+static void freeEvidence(vmodfod_evidence *evidence)
+{
+	int i;
+	for (i = 0; i < evidence->stringCount; i++) {
+		free(evidence->strings[i]);
+	}
+	free(evidence->strings);
+	EvidenceFree(evidence->pairs);
+}
+
+/**
+ * Gather the evidence from the request. Every header the data set uses comes
+ * from the header and from a query argument of the same name, and every
+ * property which can be overridden comes from a cookie and a query argument.
+ * @param ctx the context
+ * @param dataSet the data set
+ * @param evidence set to the evidence, to free with freeEvidence
+ * @return false if there was not enough memory
+ */
+static bool createEvidence(
+	const struct vrt_ctx *ctx,
+	DataSetHash *dataSet,
+	vmodfod_evidence *evidence)
+{
+	uint32_t i, headers, overrides = 0, capacity;
+	const char *headerName, *propertyName;
+	char *headerValue, *key;
+	fiftyoneDegreesOverridable *overridable = dataSet->b.b.overridable;
+
+	headers = dataSet->b.b.uniqueHeaders->count;
+	if (overridable != NULL) {
+		overrides = overridable->count;
+	}
+	capacity = (headers + overrides) * 2;
+
+	evidence->stringCount = 0;
+	evidence->pairs = EvidenceCreate(capacity);
+	// Each pair has a value at most, and each override property a key too.
+	evidence->strings = (char **)malloc(sizeof(char *) * (capacity + overrides + 1));
+	if (evidence->pairs == NULL || evidence->strings == NULL) {
+		if (evidence->pairs != NULL) {
+			EvidenceFree(evidence->pairs);
+		}
+		free(evidence->strings);
+		return false;
+	}
+
+	// There is no client request in vcl_init or on the backend side.
+	if (ctx->http_req == NULL) {
+		return true;
+	}
+
+	for (i = 0; i < headers; i++) {
+		headerName = dataSet->b.b.uniqueHeaders->items[i].name;
+		headerValue = searchHeaders(ctx->http_req, headerName);
+		if (headerValue != NULL) {
+			EvidenceAddString(
+				evidence->pairs,
+				FIFTYONE_DEGREES_EVIDENCE_HTTP_HEADER_STRING,
+				headerName,
+				headerValue);
+		}
+		addQueryEvidence(ctx, evidence, headerName);
+	}
+
+	for (i = 0; i < overrides; i++) {
+		propertyName = STRING(overridable->items[i].available->name.data.ptr);
+		if (overridable->prefix) {
+			key = (char *)malloc(
+				sizeof(VMODFOD_OVERRIDE_PREFIX) + strlen(propertyName));
+			if (key == NULL) {
+				continue;
+			}
+			strcpy(key, VMODFOD_OVERRIDE_PREFIX);
+			strcat(key, propertyName);
+			evidence->strings[evidence->stringCount++] = key;
+		}
+		else {
+			key = (char *)propertyName;
+		}
+		addFoundEvidence(
+			evidence,
+			FIFTYONE_DEGREES_EVIDENCE_COOKIE,
+			key,
+			findCookieValue(ctx, key));
+		addQueryEvidence(ctx, evidence, key);
+	}
+	return true;
+}
+
+/**
+ * Obtain the results from the evidence in the request.
  * The results should be freed by ResultsHashFree to prevent memory leak
  * @param ctx the context
  * @param exception the exception object
+ * @return the results, or NULL if there was not enough memory
  */
 ResultsHash *obtainResultsFromAvailableHeaders(
 	const struct vrt_ctx *ctx,
 	Exception *exception)
 {
-	// Get number of headers being used
-	int noOfHeaders = getHeaderCount();
+	vmodfod_evidence evidence;
+	ResultsHash *results;
 
-	// Create a results instance to work on
-	ResultsHash *results = ResultsHashCreate(global.manager, noOfHeaders);
+	// Create a results instance to work on. Any number other than zero enables
+	// overrides, and the list is sized for the data set.
+	results = ResultsHashCreate(global.manager, 1);
+	if (results == NULL) {
+		return NULL;
+	}
 
-	// Create evidence to hold important headers
-	EvidenceKeyValuePairArray *evidence = EvidenceCreate(noOfHeaders);
+	// The results hold a reference to the data set for as long as they exist.
+	if (!createEvidence(ctx, (DataSetHash *)results->b.b.dataSet, &evidence)) {
+		ResultsHashFree(results);
+		return NULL;
+	}
 
-	// Fill the evidence with values
-	setImportantHeaders(ctx, evidence);
-
-	// Get a match for the headers that have just been added and stored
-	// in the evidence.
-	ResultsHashFromEvidence(results, evidence, exception);
+	// Get a match for the evidence.
+	ResultsHashFromEvidence(results, evidence.pairs, exception);
 
 	// Free resource held in evidence
-	EvidenceFree(evidence);
+	freeEvidence(&evidence);
 
 	return results;
 }
@@ -1222,11 +1455,15 @@ VCL_STRING vmod_match_all(
 	// Create a results instance to work on
 	ResultsHash *results = OBTAIN_RESULTS_FROM_AVAILABLE_HEADERS(ctx, exception);
 
-	// Check exception and return
+	// Check for no memory, or an exception, and return
+	if (results == NULL) {
+		fprintf(stderr, "vmod_fiftyonedegrees: Insufficient memory allocated.\n");
+		WS_Release(ctx->ws, 0);
+		return (NULL);
+	}
 	if (EXCEPTION_FAILED) {
 		logExceptionMessage(exception);
-		if (results != NULL) 
-			ResultsHashFree(results);
+		ResultsHashFree(results);
 		WS_Release(ctx->ws, 0);
 		return (NULL);
 	}
@@ -1366,7 +1603,12 @@ void vmod_set_resp_headers(const struct vrt_ctx *ctx)
 	// Get a results instance to work on.
 	ResultsHash *results = OBTAIN_RESULTS_FROM_AVAILABLE_HEADERS(ctx, exception);
 	
-	// Check exception and return
+	// Check for no memory, or an exception, and return
+	if (results == NULL) {
+		fprintf(stderr, "vmod_fiftyonedegrees: Insufficient memory allocated.\n");
+		WS_Release(ctx->ws, 0);
+		return;
+	}
 	if (EXCEPTION_FAILED) {
 		logExceptionMessage(exception);
 		ResultsHashFree(results);
@@ -1442,7 +1684,7 @@ void vmod_set_resp_headers(const struct vrt_ctx *ctx)
 VCL_STRING vmod_evidence_used(
 	const struct vrt_ctx *ctx)
 {
-	uint16_t i;
+	uint32_t i;
 	// The pointer in workspace memory to print to.
 	char *p;
 
@@ -1451,14 +1693,15 @@ VCL_STRING vmod_evidence_used(
 	// printed respectively.
 	unsigned u, v = 0;
 
+	DataSetHash *dataSet;
+	vmodfod_evidence evidence;
+	EvidenceKeyValuePair *pair;
+	const char *prefix;
+
 	// Reserve some workspace.
 	u = vmodfodReserve(ctx->ws, &p);
 
 	returnString = p;
-
-	int headerIndex;
-	char *headerValue;
-	const char *headerName;
 
 	v += snprintf(p + v, u - v, "{");
 	if (v >= u) {
@@ -1467,42 +1710,46 @@ VCL_STRING vmod_evidence_used(
 		return (NULL);
 	}
 
-
-	// Loop over all important headers.
-	for (headerIndex = 0;
-		 headerIndex < getHeaderCount(global.manager);
-		 headerIndex++)
-	{
-		// Get the header name at the current index
-		headerName = getHeaderName(headerIndex);
-		// Look for the current header in the request.
-		headerValue = searchHeaders(
-			ctx->http_req,
-			headerName);
-		if (headerValue) {
-			// The request contains the header, so add it to the 
-			// return string.
-			if (p + v > returnString + 1) {
-				v += snprintf(p + v, u - v, ",");
-				if (v >= u) {
-					// No space, reset and leave.
-					WS_Release(ctx->ws, 0);
-					return (NULL);
-				}
-			}
-			v += snprintf(
-				p + v,
-				u - v,
-				"'%s':'%s'",
-				headerName,
-				headerValue);
-			if (v >= u) {
-				// No space, reset and leave.
-				WS_Release(ctx->ws, 0);
-				return (NULL);
-			}
-		}
+	dataSet = DataSetHashGet(global.manager);
+	if (!createEvidence(ctx, dataSet, &evidence)) {
+		DataSetHashRelease(dataSet);
+		WS_Release(ctx->ws, 0);
+		return (NULL);
 	}
+
+	// Headers are shown by name alone, and the rest with where they came from.
+	for (i = 0; i < evidence.pairs->count && v < u; i++) {
+		pair = &evidence.pairs->items[i];
+		switch (pair->prefix) {
+		case FIFTYONE_DEGREES_EVIDENCE_QUERY:
+			prefix = "query.";
+			break;
+		case FIFTYONE_DEGREES_EVIDENCE_COOKIE:
+			prefix = "cookie.";
+			break;
+		default:
+			prefix = "";
+			break;
+		}
+		v += snprintf(
+			p + v,
+			u - v,
+			"%s'%s%s':'%s'",
+			i > 0 ? "," : "",
+			prefix,
+			(const char *)pair->item.key,
+			(const char *)pair->item.value);
+	}
+
+	freeEvidence(&evidence);
+	DataSetHashRelease(dataSet);
+
+	if (v >= u) {
+		// No space, reset and leave.
+		WS_Release(ctx->ws, 0);
+		return (NULL);
+	}
+
 	v += snprintf(p + v, u - v, "}");
 	if (v >= u) {
 		// No space, reset and leave.
@@ -1512,12 +1759,6 @@ VCL_STRING vmod_evidence_used(
 
 	// Skip over the null terminator
 	v++;
-
-	if (v > u) {
-		// No space, reset and leave.
-		WS_Release(ctx->ws, 0);
-		return (NULL);
-	}
 
 	WS_Release(ctx->ws, v);
 	return (returnString);

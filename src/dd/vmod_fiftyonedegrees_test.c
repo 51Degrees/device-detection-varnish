@@ -87,6 +87,8 @@ ResultsHash *obtainResultsFromAvailableHeadersDecor(
 {
 	// Obtain results as does in release version
 	ResultsHash *results = obtainResultsFromAvailableHeaders(ctx, exception);
+	if (results == NULL)
+		return results;
 	// Modify drift and difference
 	if (globalTest.expectedDrift.set)
 		results->items->drift = globalTest.expectedDrift.value;
