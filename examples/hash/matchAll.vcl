@@ -3,7 +3,7 @@
 
 This example shows how to use match_all() api which will use all available
 headeres in the request to find the corresponding mobile device. This example is
-available in full on [GitHub](https://github.com/51Degrees/device-detection-varnish/blob/master/examples/hash/matchAll.vcl).
+available in full on [GitHub](https://github.com/51Degrees/device-detection-varnish/blob/main/examples/hash/matchAll.vcl).
 
 @include{doc} example-require-datafile.txt
 

@@ -3,7 +3,7 @@
 
 This example shows how to configure the available settings for 51Degrees'
 on-premise device detection in Varnish. This example is available in full 
-on [GitHub](https://github.com/51Degrees/device-detection-varnish/blob/master/examples/hash/config.vcl).
+on [GitHub](https://github.com/51Degrees/device-detection-varnish/blob/main/examples/hash/config.vcl).
 
 @include{doc} example-require-datafile.txt
 
