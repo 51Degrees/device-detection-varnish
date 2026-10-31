@@ -95,6 +95,20 @@ case "$datafile" in
 esac
 AC_SUBST(FIFTYONEDEGREES_DATAFILE_ABSOLUTE, $datafileabsolute)
 
+# Define the 51Degrees IP Intelligence data file path
+AC_ARG_WITH([datafile-ipi],
+			AS_HELP_STRING([--with-datafile-ipi=path/to/datafile], [The IP Intelligence data file used by the tests. By default, the ASN data file will be used]),
+    [datafileipi=$withval],
+    [datafileipi=cxx/ip-intelligence-data/51Degrees-IPIV4AsnIpiV41.ipi])
+
+AC_MSG_NOTICE([Including IP Intelligence data file at '$datafileipi'])
+
+case "$datafileipi" in
+	/*) datafileipiabsolute=$datafileipi ;;
+	*) datafileipiabsolute=`pwd`/$datafileipi ;;
+esac
+AC_SUBST(FIFTYONEDEGREES_DATAFILE_IPI_ABSOLUTE, $datafileipiabsolute)
+
 # Define the version and add the option to redefine in configure.
 AC_ARG_WITH([version],
     AS_HELP_STRING([--with-version=version], [The version of Varnish to build the module for.]),
@@ -157,7 +171,8 @@ AC_CONFIG_SRCDIR(src/vmod_fiftyonedegrees.vcc)
 
 AC_CONFIG_FILES(
     Makefile
-    src/Makefile)
+    src/Makefile
+    src/ipi/Makefile)
 
 missingFileMsg=["source file not found, this is likely because the git submodule has not ben pulled."]
 missingDataMsg=["data file '$datafile' not found."]
@@ -173,9 +188,15 @@ AC_CHECK_FILES($srcdir/cxx/src/dd/config-dd.h,
 AC_CHECK_FILES($srcdir/cxx/src/dd/results-dd.h,
     [],
     [AC_MSG_ERROR($missingFileMsg)])
+AC_CHECK_FILES($srcdir/cxx/src/ipi/ipi.h,
+    [],
+    [AC_MSG_ERROR($missingFileMsg)])
 AC_CHECK_FILES($datafile,
     [],
     [AC_MSG_WARN($missingDataMsg)])
+AC_CHECK_FILES($datafileipi,
+    [],
+    [AC_MSG_WARN([data file '$datafileipi' not found.])])
 
 
 AC_OUTPUT

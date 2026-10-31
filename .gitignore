@@ -6,6 +6,12 @@ config.*
 autom4te.cache/*
 src/.deps/*
 src/.libs/*
+src/ipi/.deps/*
+src/ipi/.libs/*
+src/ipi/vcc_if.*
+src/ipi/vmod_fiftyonedegrees_ipi.man.rst
+src/ipi/vmod_fiftyonedegrees_ipi.rst
+vmod_fiftyonedegrees_ipi.4
 src/vmod_fiftyonedegrees.vcc
 src/vmod_fiftyonedegrees_extra.h
 bin/*
