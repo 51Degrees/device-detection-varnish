@@ -24,5 +24,11 @@
     "Image": "ubuntu-24.04",
     "Name": "ubuntu-24.04_Varnish8.0.1",
     "VarnishVersion": "8.0.1"
+  },
+  {
+    "Image": "ubuntu-24.04",
+    "Name": "ubuntu-24.04_Varnish8.0.1_MemCheck",
+    "VarnishVersion": "8.0.1",
+    "MemCheck": true
   }
 ]

@@ -14,12 +14,16 @@ The name of the test suite in the JUnit file.
 
 .PARAMETER MakeArguments
 Further arguments for make, such as the data file to test with.
+
+.PARAMETER Target
+The make target which runs the tests.
 #>
 param(
     [Parameter(Mandatory)][string]$BuildPath,
     [Parameter(Mandatory)][string]$ResultsFile,
     [Parameter(Mandatory)][string]$SuiteName,
-    [string[]]$MakeArguments = @()
+    [string[]]$MakeArguments = @(),
+    [string]$Target = "check"
 )
 $ErrorActionPreference = "Stop"
 
@@ -27,7 +31,7 @@ New-Item -ItemType Directory -Force -Path (Split-Path $ResultsFile) | Out-Null
 
 Push-Location $BuildPath
 try {
-    $output = & make -k check @MakeArguments 2>&1 | ForEach-Object { "$_" }
+    $output = & make -k $Target @MakeArguments 2>&1 | ForEach-Object { "$_" }
     $makeExit = $LASTEXITCODE
 } finally {
     Pop-Location
