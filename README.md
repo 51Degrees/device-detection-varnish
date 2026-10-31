@@ -298,7 +298,7 @@ All the examples are in the `examples` folder. Device detection examples are in 
 | --- | --- |
 | `make check` | Runs the tests of both modules and each example. The `test` version is needed. |
 | `make mem-check` | Builds both modules with the address sanitizer, then runs the same tests. |
-| `tests/performance` | Measures what each lookup adds to a request. Run `cmake ..` and `cmake --build .` in a `build` folder there, then `ENGINE=ipi BUILD_PATH=/path/to/repository ./runPerf.sh` for IP Intelligence, or `EVIDENCE=/path/to/evidence.yml BUILD_PATH=/path/to/repository ./runPerf.sh` for device detection. It needs `cmake`, `libapr1-dev` and `libaprutil1-dev`, and writes `results.json`. |
+| `tests/performance` | Measures the clock time of each request through Varnish, with each request making one detection. Run `cmake ..` and `cmake --build .` in a `build` folder there, then `ENGINE=ipi BUILD_PATH=/path/to/repository ./runPerf.sh` for IP Intelligence, or `EVIDENCE=/path/to/evidence.yml BUILD_PATH=/path/to/repository ./runPerf.sh` for device detection. It needs `cmake`, `libapr1-dev` and `libaprutil1-dev`, and writes `results.json`. |
 
 ## IP Intelligence
 
