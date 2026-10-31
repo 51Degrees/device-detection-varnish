@@ -6,7 +6,7 @@
 
 ## Introduction
 
-The project contains source code for the Varnish integration of 51Degrees' on-premise Device Detection engine.
+The project contains source code for the Varnish integration of 51Degrees' on-premise Device Detection and IP Intelligence engines, as two modules that can be used together or on their own. The `fiftyonedegrees` module provides device detection, and the `fiftyonedegrees_ipi` module provides [IP Intelligence](#ip-intelligence).
 
 The module is supported for Varnish 6.0 (LTS), 7.7 and 8.0, and is tested on 6.0.6, 6.0.8, 6.0.17, 7.7.3 and 8.0.1.
 
@@ -64,6 +64,8 @@ $ sudo make install
 Where `--with-config`  [optional] sets the version that will be built. `release` and `test` versions are identical, except that the `test` version expose some additional functions to support the testing process. Only `release` version is recommended for production. By default `release` version is built.
 
 `--with-datafile` [optional] sets the data file used by the unit tests. This data file will also be copied on installation.
+
+`--with-datafile-ipi` [optional] sets the IP Intelligence data file used by the unit tests.
 
 When varnish is installed in a non standard directory, please set the value of environment variable `VARNISHSRC` to point to where the varnish source resides before running the `configure` (e.g. ``export VARNISHSRC=/usr/include/varnish``).
 
@@ -206,3 +208,58 @@ HTTP/1.1 200 OK
 X-IsMobile: True
 ...
 ```
+
+## IP Intelligence
+
+The `fiftyonedegrees_ipi` module looks up an IP address and returns the properties of the network it belongs to. It is a separate module because IP Intelligence needs the common C code compiled differently from device detection, so one library cannot hold both. `make install` installs both modules, and each VCL imports the ones it uses.
+
+### Data files
+
+The module reads version 4.6 data files. A data file of another version is refused when the VCL loads.
+
+| Data file | Where to get it | Properties |
+| --- | --- | --- |
+| ASN | `cxx/ip-intelligence-data/51Degrees-IPIV4AsnIpiV41.ipi`, included with the `cxx` sub-module | `AsnName` and `Asn` |
+| Lite and Enterprise | See the [data file options](https://51degrees.com/pricing?utm_source=github&utm_medium=readme&utm_campaign=device-detection-varnish&utm_content=readme.md&utm_term=ip-intelligence-data-files) | Many more, such as `RegisteredName` and `RegisteredCountry` |
+
+### The VCL file
+
+```
+import fiftyonedegrees_ipi;
+
+sub vcl_init {
+	fiftyonedegrees_ipi.set_properties("AsnName,Asn");
+	fiftyonedegrees_ipi.start("/path/to/51Degrees-IPIV4AsnIpiV41.ipi");
+}
+
+sub vcl_recv {
+	set req.http.x-asn = fiftyonedegrees_ipi.match("AsnName");
+}
+```
+
+| Function | What it does |
+| --- | --- |
+| `start(filePath)` | Loads the data file. If the file cannot be used the VCL does not load, and Varnish carries on with the VCL it had. |
+| `reload(filePath)` | Reloads the data, from the original file if no path is given. If that fails the data already loaded stays in use. |
+| `match(properties, ip)` | Returns the values of the comma separated properties for an IP address. |
+| `set_properties(properties)` | Before `start`, sets the properties to load. Loading only the ones needed reduces memory use and makes each match faster. By default all of them are loaded. |
+| `set_delimiter(delimiter)` | Before `start`, sets what separates the values of different properties. By default this is a comma. |
+| `set_performance_profile(profile)` | Before `start`, sets how much of the data is held in memory, one of `DEFAULT`, `IN_MEMORY`, `HIGH_PERFORMANCE`, `LOW_MEMORY` or `BALANCED`. |
+| `set_max_concurrency(concurrency)` | Before `start`, sets the maximum number of expected concurrent requests. |
+| `get_dataset_name()`, `get_dataset_format()`, `get_dataset_published_date()` | Describe the data file loaded. |
+
+### Choosing the address
+
+With no second argument `match` looks up `client.ip`. When Varnish sits behind a proxy or a load balancer, pass the address to use instead, for example `fiftyonedegrees_ipi.match("AsnName", req.http.X-Real-IP)`.
+
+Pass one address. Given a list such as the value of `X-Forwarded-For`, the module looks up the first address in the string and ignores the rest, and the first address is not always one you can trust, so choose the address in VCL.
+
+### Values
+
+Each value takes the form `"value":weight`, where the weight is a number between 0 and 1 showing the confidence in the value. A property with several values has them separated by a pipe. The double quotes are escaped with a backslash, so the string can be used as a header value, in the same way as the [Nginx module](https://github.com/51Degrees/device-detection-nginx). For example, `fiftyonedegrees_ipi.match("AsnName,Asn", "212.58.224.22")` returns `\"BBC\":1,\"AS2818\":1` with the ASN data file.
+
+`N/A` is returned in place of a value when the property was not loaded, the property has no value, or the address is missing or malformed. The reason is logged as a `VCL_Error` record, and the request carries on. If the values do not fit in the workspace, the result is not set.
+
+### Examples
+
+`examples/ipi/gettingStarted.vcl` uses the module on its own, and `examples/mixed/gettingStarted.vcl` uses it alongside device detection for the same request.
