@@ -1,0 +1,85 @@
+#
+# This Original Work is copyright of 51 Degrees Mobile Experts Limited.
+# Copyright 2020 51 Degrees Mobile Experts Limited, 5 Charlotte Close,
+# Caversham, Reading, Berkshire, United Kingdom RG4 7BY.
+#
+# This Original Work is licensed under the European Union Public Licence (EUPL) 
+# v.1.2 and is subject to its terms as set out below.
+#
+# If a copy of the EUPL was not distributed with this file, You can obtain
+# one at https://opensource.org/licenses/EUPL-1.2.
+#
+# The 'Compatible Licences' set out in the Appendix to the EUPL (as may be
+# amended by the European Commission) shall be deemed incompatible for
+# the purposes of the Work and the provisions of the compatibility
+# clause in Article 5 of the EUPL shall not apply.
+# 
+# If using the Work as, or as part of, a network application, by 
+# including the attribution notice(s) required under Article 5 of the EUPL
+# in the end user terms of the application under an appropriate heading, 
+# such notice(s) shall fulfill the requirements of that article.
+#
+
+varnishtest "match_ua_client_hints uses the User-Agent and client hints alone"
+
+server s1 -repeat 20 {
+	rxreq
+	txresp
+} -start
+
+varnish v1 -vcl+backend {
+	import fiftyonedegrees from "${vmod_topbuild}/src/dd/.libs/libvmod_fiftyonedegrees.so";
+
+	sub vcl_init {
+		fiftyonedegrees.start("${vmod_fod_datafile}");
+	}
+	sub vcl_deliver {
+		set resp.http.ismobile = fiftyonedegrees.match_ua_client_hints("IsMobile");
+		set resp.http.ismobile-given = fiftyonedegrees.match_ua_client_hints("IsMobile", req.http.x-other-ua);
+		set resp.http.model = fiftyonedegrees.match_ua_client_hints("HardwareModel");
+		set resp.http.vendor = fiftyonedegrees.match_ua_client_hints("HardwareVendor");
+		set resp.http.model-all = fiftyonedegrees.match_all("HardwareModel");
+		set resp.http.model-single = fiftyonedegrees.match_single(req.http.user-agent, "HardwareModel");
+		# The Lite data file has no client hints, so the hardware is only checked
+		# with a larger file.
+		if (fiftyonedegrees.get_dataset_name() == "Lite") {
+			set resp.http.model = "SM-S918B";
+			set resp.http.vendor = "Samsung";
+			set resp.http.model-all = "SM-S918B";
+			set resp.http.model-single = "Generic Android";
+		}
+	}
+} -start
+
+client c1 {
+	txreq -url "/" \
+		-hdr "User-Agent: Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Mobile Safari/537.36" \
+		-hdr {sec-ch-ua-platform: "Android"} \
+		-hdr {sec-ch-ua-model: "SM-S918B"} \
+		-hdr "sec-ch-ua-mobile: ?1" \
+		-hdr {sec-ch-ua-platform-version: "13.0.0"} \
+		-hdr {sec-ch-ua-full-version-list: "Google Chrome";v="117.0.5938.60", "Not;A=Brand";v="8.0.0.0", "Chromium";v="117.0.5938.60"} \
+		-hdr {sec-ch-ua: "Google Chrome";v="117", "Not;A=Brand";v="8", "Chromium";v="117"}
+	rxresp
+	expect resp.status == 200
+	expect resp.http.ismobile == "True"
+	expect resp.http.model == "SM-S918B"
+	expect resp.http.vendor == "Samsung"
+	expect resp.http.model-all == "SM-S918B"
+	expect resp.http.model-single == "Generic Android"
+
+	# The User-Agent given takes the place of the one in the request.
+	txreq -url "/" \
+		-hdr "User-Agent: Mozilla/5.0 (iPhone; CPU iPhone OS 7_1 like Mac OS X) AppleWebKit/537.51.2 (KHTML, like Gecko) Version/7.0 Mobile/11D167 Safari/9537.53" \
+		-hdr "x-other-ua: Mozilla/5.0 (Windows NT 6.3; WOW64; rv:41.0) Gecko/20100101 Firefox/41.0"
+	rxresp
+	expect resp.http.ismobile == "True"
+	expect resp.http.ismobile-given == "False"
+
+	# A header which is not a client hint is left out.
+	txreq -url "/" \
+		-hdr "User-Agent: Mozilla/5.0 (Windows NT 6.3; WOW64; rv:41.0) Gecko/20100101 Firefox/41.0" \
+		-hdr "X-Operamini-Phone-UA: Mozilla/5.0 (iPhone; CPU iPhone OS 7_1 like Mac OS X) AppleWebKit/537.51.2 (KHTML, like Gecko) Version/7.0 Mobile/11D167 Safari/9537.53"
+	rxresp
+	expect resp.http.ismobile == "False"
+} -run
